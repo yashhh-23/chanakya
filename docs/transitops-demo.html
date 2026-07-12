@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TransitOps — Fleet Operations Console</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0B1220;
+    --surface: #121B2E;
+    --surface-2: #17223A;
+    --border: #263349;
+    --text: #E8EDF5;
+    --text-muted: #8A97AC;
+    --text-dim: #5B6685;
+    --ok: #35D499;
+    --ok-dim: rgba(53,212,153,0.14);
+    --warn: #FFB020;
+    --warn-dim: rgba(255,176,32,0.14);
+    --danger: #FF5C5C;
+    --danger-dim: rgba(255,92,92,0.14);
+    --neutral: #6B7690;
+    --neutral-dim: rgba(107,118,144,0.14);
+    --accent: #4C7CF3;
+    --accent-dim: rgba(76,124,243,0.14);
+    --radius: 10px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    min-height: 100vh;
+    display:flex;
+  }
+  .mono{ font-family:'JetBrains Mono', monospace; }
+  ::selection{ background: var(--accent-dim); }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar{
+    width: 220px;
+    flex-shrink:0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display:flex;
+    flex-direction:column;
+    padding: 20px 0;
+    height:100vh;
+    position:sticky;
+    top:0;
+  }
+  .brand{
+    padding: 0 20px 20px 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 14px;
+  }
+  .brand-mark{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size: 18px;
+    letter-spacing: -0.02em;
+    display:flex; align-items:center; gap:8px;
+  }
+  .brand-mark .dot{
+    width:8px; height:8px; border-radius:2px; background: var(--ok);
+    box-shadow: 0 0 8px var(--ok);
+  }
+  .brand-sub{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    color: var(--text-dim);
+    margin-top: 4px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .nav-group{ padding: 0 12px; margin-bottom: 6px; }
+  .nav-label{
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    padding: 12px 8px 6px 8px;
+    font-weight: 600;
+  }
+  .nav-item{
+    display:flex; align-items:center; gap:10px;
+    padding: 9px 10px;
+    border-radius: 8px;
+    color: var(--text-muted);
+    cursor:pointer;
+    font-size: 13.5px;
+    font-weight: 500;
+    transition: background 0.15s, color 0.15s;
+    user-select:none;
+  }
+  .nav-item svg{ width:16px; height:16px; opacity:0.85; flex-shrink:0; }
+  .nav-item:hover{ background: var(--surface-2); color: var(--text); }
+  .nav-item.active{ background: var(--accent-dim); color: var(--text); }
+  .nav-item.active svg{ opacity:1; }
+  .nav-item .badge{
+    margin-left:auto;
+    background: var(--danger-dim);
+    color: var(--danger);
+    font-size:10px; font-weight:700;
+    padding: 1px 6px; border-radius: 20px;
+    font-family:'JetBrains Mono', monospace;
+  }
+  .sidebar-footer{
+    margin-top:auto;
+    padding: 14px 20px 4px 20px;
+    border-top: 1px solid var(--border);
+    display:flex; align-items:center; gap:10px;
+  }
+  .role-pill{
+    width:30px;height:30px;border-radius:8px;
+    background: var(--accent-dim); color: var(--accent);
+    display:flex; align-items:center; justify-content:center;
+    font-weight:700; font-size:12px; font-family:'Space Grotesk', sans-serif;
+    flex-shrink:0;
+  }
+  .role-meta .name{ font-size:12.5px; font-weight:600; }
+  .role-meta .role{ font-size:11px; color:var(--text-dim); }
+
+  /* ---------- Main ---------- */
+  .main{ flex:1; min-width:0; display:flex; flex-direction:column; }
+  .topbar{
+    height:60px;
+    border-bottom:1px solid var(--border);
+    display:flex; align-items:center;
+    padding: 0 24px;
+    gap: 20px;
+    position:sticky; top:0; background: rgba(11,18,32,0.9); backdrop-filter: blur(8px);
+    z-index: 20;
+  }
+  .topbar h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size: 17px; font-weight:600;
+  }
+  .topbar .sub{ color:var(--text-dim); font-size:12px; margin-left:2px;}
+  .clock{
+    margin-left:auto;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    color: var(--text-muted);
+    display:flex; align-items:center; gap:8px;
+  }
+  .clock .live-dot{
+    width:6px;height:6px;border-radius:50%;background:var(--ok);
+    box-shadow: 0 0 6px var(--ok);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse{ 0%,100%{opacity:1} 50%{opacity:0.35} }
+
+  .content{ padding: 22px 26px 60px 26px; }
+  .view{ display:none; animation: fadein 0.25s ease; }
+  .view.active{ display:block; }
+  @keyframes fadein{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;} }
+
+  /* ---------- Fleet Pulse (signature element) ---------- */
+  .pulse-strip{
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 0;
+    margin-bottom: 22px;
+    overflow: hidden;
+    position: relative;
+  }
+  .pulse-strip::before{
+    content: "FLEET PULSE";
+    position:absolute; top:-1px; left:16px;
+    background:var(--surface); padding: 0 8px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 9.5px; letter-spacing:0.12em;
+    color: var(--text-dim);
+    transform: translateY(-50%);
+  }
+  .pulse-track{
+    display:flex; gap:10px;
+    animation: scroll-left 32s linear infinite;
+    width: max-content;
+    padding-top: 6px;
+  }
+  .pulse-strip:hover .pulse-track{ animation-play-state: paused; }
+  @keyframes scroll-left{
+    from{ transform: translateX(0); }
+    to{ transform: translateX(-50%); }
+  }
+  .pulse-chip{
+    flex-shrink:0;
+    display:flex; align-items:center; gap:8px;
+    background: var(--surface-2);
+    border:1px solid var(--border);
+    border-radius: 7px;
+    padding: 7px 12px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 12px;
+    white-space:nowrap;
+  }
+  .pulse-chip .sq{ width:7px; height:7px; border-radius:2px; flex-shrink:0; }
+  .pulse-chip .reg{ font-weight:600; }
+  .pulse-chip .status{ color: var(--text-dim); font-size:10.5px; text-transform:uppercase; letter-spacing:0.04em;}
+
+  /* ---------- KPI Grid ---------- */
+  .kpi-grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px,1fr));
+    gap: 12px;
+    margin-bottom: 22px;
+  }
+  .kpi-card{
+    background: var(--surface);
+    border:1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 16px 14px 16px;
+    position:relative;
+    overflow:hidden;
+  }
+  .kpi-card .accent-bar{
+    position:absolute; top:0; left:0; width:100%; height:2px;
+  }
+  .kpi-label{
+    font-size:11px; color:var(--text-dim);
+    text-transform:uppercase; letter-spacing:0.06em;
+    font-weight:600; margin-bottom:10px;
+  }
+  .kpi-value{
+    font-family:'Space Grotesk', sans-serif;
+    font-size: 28px; font-weight:700; letter-spacing:-0.02em;
+    display:flex; align-items:baseline; gap:6px;
+  }
+  .kpi-value .unit{ font-size:13px; color:var(--text-dim); font-weight:500; font-family:'Inter', sans-serif;}
+
+  /* ---------- Panels / cards ---------- */
+  .panel{
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 20px;
+  }
+  .panel-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--border);
+  }
+  .panel-head h2{
+    font-family:'Space Grotesk', sans-serif;
+    font-size: 14.5px; font-weight:600;
+  }
+  .panel-head .desc{ font-size:11.5px; color:var(--text-dim); margin-top:2px; }
+  .panel-body{ padding: 16px 18px; }
+
+  .btn{
+    background: var(--accent);
+    color: white;
+    border:none;
+    padding: 8px 14px;
+    border-radius: 7px;
+    font-size: 12.5px;
+    font-weight:600;
+    font-family:'Inter', sans-serif;
+    cursor:pointer;
+    transition: filter 0.15s;
+    display:inline-flex; align-items:center; gap:6px;
+  }
+  .btn:hover{ filter: brightness(1.12); }
+  .btn.ghost{
+    background: transparent; border:1px solid var(--border); color: var(--text-muted);
+  }
+  .btn.ghost:hover{ color:var(--text); border-color: var(--accent); }
+  .btn.small{ padding: 5px 10px; font-size:11.5px; }
+  .btn:disabled{ opacity:0.35; cursor:not-allowed; }
+  .btn.danger-outline{ background:transparent; border:1px solid var(--danger); color:var(--danger); }
+
+  /* filters */
+  .filter-row{ display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
+  select, input[type=text], input[type=number], input[type=date]{
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 7px 10px;
+    border-radius: 7px;
+    font-size: 12.5px;
+    font-family: 'Inter', sans-serif;
+  }
+  select:focus, input:focus{ outline: 2px solid var(--accent); outline-offset:1px; }
+  label{ font-size:11.5px; color:var(--text-dim); font-weight:600; text-transform:uppercase; letter-spacing:0.04em; display:block; margin-bottom:5px; }
+  .field{ margin-bottom: 12px; }
+  .field-row{ display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* table */
+  table{ width:100%; border-collapse: collapse; }
+  th{
+    text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:0.05em;
+    color: var(--text-dim); font-weight:600;
+    padding: 8px 10px; border-bottom: 1px solid var(--border);
+  }
+  td{
+    padding: 11px 10px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    vertical-align: middle;
+  }
+  tr:last-child td{ border-bottom:none; }
+  tr.row-hover:hover{ background: var(--surface-2); }
+
+  .status-badge{
+    display:inline-flex; align-items:center; gap:6px;
+    padding: 3px 9px 3px 7px;
+    border-radius: 20px;
+    font-size: 11px; font-weight:600;
+    font-family:'JetBrains Mono', monospace;
+  }
+  .status-badge .sq{ width:6px; height:6px; border-radius:50%; }
+  .status-Available, .status-Completed{ background: var(--ok-dim); color: var(--ok); }
+  .status-Available .sq, .status-Completed .sq{ background: var(--ok); }
+  .status-OnTrip, .status-Dispatched{ background: var(--warn-dim); color: var(--warn); }
+  .status-OnTrip .sq, .status-Dispatched .sq{ background: var(--warn); }
+  .status-InShop{ background: var(--danger-dim); color: var(--danger); }
+  .status-InShop .sq{ background: var(--danger); }
+  .status-Retired, .status-Cancelled, .status-OffDuty{ background: var(--neutral-dim); color: var(--neutral); }
+  .status-Retired .sq, .status-Cancelled .sq, .status-OffDuty .sq{ background: var(--neutral); }
+  .status-Suspended{ background: var(--danger-dim); color: var(--danger); }
+  .status-Suspended .sq{ background: var(--danger); }
+  .status-Draft{ background: var(--accent-dim); color: var(--accent); }
+  .status-Draft .sq{ background: var(--accent); }
+
+  .reg-tag{
+    font-family:'JetBrains Mono', monospace;
+    font-weight:600;
+    background: var(--surface-2);
+    padding: 2px 7px;
+    border-radius: 5px;
+    font-size:12px;
+    border: 1px solid var(--border);
+  }
+
+  .empty-state{
+    text-align:center; padding: 40px 20px; color: var(--text-dim);
+  }
+  .empty-state .icon{ font-size:26px; margin-bottom:10px; opacity:0.6; }
+  .empty-state .title{ font-weight:600; color:var(--text-muted); margin-bottom:4px; font-size:13px;}
+  .empty-state .sub{ font-size:12px; }
+
+  /* modal */
+  .modal-backdrop{
+    position:fixed; inset:0; background: rgba(6,9,16,0.72);
+    display:none; align-items:center; justify-content:center;
+    z-index: 100; backdrop-filter: blur(2px);
+  }
+  .modal-backdrop.active{ display:flex; }
+  .modal{
+    background: var(--surface);
+    border:1px solid var(--border);
+    border-radius: 14px;
+    width: 460px;
+    max-width: 92vw;
+    max-height: 86vh;
+    overflow-y:auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .modal-head{
+    padding: 18px 20px;
+    border-bottom:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .modal-head h3{ font-family:'Space Grotesk', sans-serif; font-size:15px; font-weight:600; }
+  .modal-close{ cursor:pointer; color: var(--text-dim); font-size:18px; line-height:1; background:none; border:none; }
+  .modal-close:hover{ color: var(--text); }
+  .modal-body{ padding: 18px 20px; }
+  .modal-foot{
+    padding: 14px 20px; border-top:1px solid var(--border);
+    display:flex; justify-content:flex-end; gap:8px;
+  }
+
+  .validation-msg{
+    background: var(--danger-dim); color: var(--danger);
+    border: 1px solid rgba(255,92,92,0.3);
+    padding: 9px 12px; border-radius: 7px;
+    font-size: 12px; margin-bottom: 12px;
+    display:none;
+  }
+  .validation-msg.active{ display:block; }
+
+  .hint{ font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+
+  .toast-wrap{
+    position:fixed; bottom:20px; right:20px; z-index:200;
+    display:flex; flex-direction:column; gap:8px;
+  }
+  .toast{
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--ok);
+    padding: 11px 16px; border-radius: 8px;
+    font-size: 12.5px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+    animation: toast-in 0.25s ease;
+    min-width: 220px;
+  }
+  @keyframes toast-in{ from{opacity:0; transform:translateX(20px);} to{opacity:1; transform:none;} }
+
+  /* trip kanban */
+  .kanban{ display:grid; grid-template-columns: repeat(4,1fr); gap:12px; }
+  .kanban-col{ background: var(--surface-2); border:1px solid var(--border); border-radius: 10px; padding: 10px; min-height: 160px;}
+  .kanban-col-head{ display:flex; align-items:center; justify-content:space-between; padding: 4px 4px 10px 4px; }
+  .kanban-col-head .title{ font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); }
+  .kanban-col-head .count{ font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--text-dim); background:var(--surface); padding:1px 7px; border-radius:20px; border:1px solid var(--border);}
+  .trip-card{
+    background: var(--surface); border:1px solid var(--border); border-radius:8px;
+    padding: 10px 11px; margin-bottom:8px; font-size:12px;
+  }
+  .trip-card .route{ font-weight:600; margin-bottom:6px; display:flex; align-items:center; gap:5px; }
+  .trip-card .route .arrow{ color: var(--text-dim); }
+  .trip-card .meta{ color:var(--text-dim); font-size:11px; font-family:'JetBrains Mono', monospace; margin-bottom:8px; line-height:1.6;}
+  .trip-card .actions{ display:flex; gap:6px; }
+
+  /* reports */
+  .report-grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .bar-row{ display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+  .bar-label{ width:78px; font-size:11.5px; color:var(--text-muted); font-family:'JetBrains Mono', monospace; flex-shrink:0; }
+  .bar-track{ flex:1; background: var(--surface-2); border-radius:5px; height:16px; overflow:hidden; }
+  .bar-fill{ height:100%; border-radius:5px; }
+  .bar-val{ width:52px; text-align:right; font-size:11.5px; font-family:'JetBrains Mono', monospace; color:var(--text-muted); flex-shrink:0;}
+
+  .roi-pos{ color: var(--ok); }
+  .roi-neg{ color: var(--danger); }
+
+  ::-webkit-scrollbar{ width:8px; height:8px; }
+  ::-webkit-scrollbar-thumb{ background: var(--border); border-radius:4px; }
+  ::-webkit-scrollbar-track{ background: transparent; }
+
+  @media (max-width: 900px){
+    .sidebar{ display:none; }
+    .kanban{ grid-template-columns: 1fr 1fr; }
+    .field-row{ grid-template-columns:1fr; }
+    .report-grid{ grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="brand">
+    <div class="brand-mark"><span class="dot"></span>TransitOps</div>
+    <div class="brand-sub">Fleet Ops Console</div>
+  </div>
+  <div class="nav-group">
+    <div class="nav-item active" data-view="dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+      Dashboard
+    </div>
+    <div class="nav-item" data-view="vehicles">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 13l1.5-5A2 2 0 0 1 6.4 6.5h11.2a2 2 0 0 1 1.9 1.5L21 13"/><rect x="2" y="13" width="20" height="5" rx="1"/><circle cx="7" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg>
+      Vehicles
+    </div>
+    <div class="nav-item" data-view="drivers">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      Drivers
+    </div>
+    <div class="nav-item" data-view="trips">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l18-7-7 18-2-8-8-3z"/></svg>
+      Trips
+      <span class="badge" id="nav-trip-badge">0</span>
+    </div>
+    <div class="nav-item" data-view="maintenance">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a4 4 0 0 1-5.4 5.4L4 17v3h3l5.3-5.3a4 4 0 0 1 5.4-5.4l-2.7 2.7-2-2z"/></svg>
+      Maintenance
+      <span class="badge" id="nav-maint-badge">0</span>
+    </div>
+    <div class="nav-item" data-view="fuel">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 21V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v15"/><path d="M4 11h8"/><path d="M14 8h2l3 3v6a1.5 1.5 0 0 1-3 0"/><circle cx="7" cy="6" r="0"/></svg>
+      Fuel &amp; Expense
+    </div>
+    <div class="nav-item" data-view="reports">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg>
+      Reports
+    </div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="role-pill">FM</div>
+    <div class="role-meta">
+      <div class="name">Fleet Manager</div>
+      <div class="role">Demo session</div>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <h1 id="topbar-title">Dashboard</h1>
+    <span class="sub" id="topbar-sub">Live operational snapshot</span>
+    <div class="clock"><span class="live-dot"></span><span id="clock-text">--:--:--</span></div>
+  </div>
+
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div class="view active" id="view-dashboard">
+      <div class="pulse-strip">
+        <div class="pulse-track" id="pulse-track"></div>
+      </div>
+
+      <div class="kpi-grid" id="kpi-grid"></div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Overdue Returns &amp; Alerts</h2>
+            <div class="desc">Items requiring attention right now</div>
+          </div>
+        </div>
+        <div class="panel-body" id="alerts-body"></div>
+      </div>
+
+      <div class="filter-row">
+        <select id="dash-filter-type"><option value="">All types</option></select>
+        <select id="dash-filter-status"><option value="">All statuses</option><option>Available</option><option>OnTrip</option><option>InShop</option><option>Retired</option></select>
+      </div>
+    </div>
+
+    <!-- VEHICLES -->
+    <div class="view" id="view-vehicles">
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Vehicle Registry</h2>
+            <div class="desc">Master list — registration numbers must be unique</div>
+          </div>
+          <button class="btn" onclick="openModal('vehicle')">+ Register Vehicle</button>
+        </div>
+        <div class="panel-body">
+          <div class="filter-row">
+            <input type="text" id="veh-search" placeholder="Search reg number or model...">
+            <select id="veh-status-filter">
+              <option value="">All statuses</option>
+              <option>Available</option><option>OnTrip</option><option>InShop</option><option>Retired</option>
+            </select>
+          </div>
+          <table>
+            <thead><tr><th>Reg Number</th><th>Model</th><th>Type</th><th>Max Load</th><th>Odometer</th><th>Status</th><th></th></tr></thead>
+            <tbody id="vehicles-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- DRIVERS -->
+    <div class="view" id="view-drivers">
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Driver Management</h2>
+            <div class="desc">Profiles, license validity &amp; safety scores</div>
+          </div>
+          <button class="btn" onclick="openModal('driver')">+ Add Driver</button>
+        </div>
+        <div class="panel-body">
+          <table>
+            <thead><tr><th>Name</th><th>License</th><th>Expiry</th><th>Safety Score</th><th>Status</th><th></th></tr></thead>
+            <tbody id="drivers-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRIPS -->
+    <div class="view" id="view-trips">
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Trip Management</h2>
+            <div class="desc">Draft → Dispatched → Completed / Cancelled</div>
+          </div>
+          <button class="btn" onclick="openModal('trip')">+ Create Trip</button>
+        </div>
+        <div class="panel-body">
+          <div class="kanban" id="trip-kanban"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAINTENANCE -->
+    <div class="view" id="view-maintenance">
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Maintenance Log</h2>
+            <div class="desc">Opening a record pulls the vehicle out of dispatch automatically</div>
+          </div>
+          <button class="btn" onclick="openModal('maint')">+ Log Maintenance</button>
+        </div>
+        <div class="panel-body">
+          <table>
+            <thead><tr><th>Vehicle</th><th>Issue</th><th>Opened</th><th>Status</th><th></th></tr></thead>
+            <tbody id="maint-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- FUEL & EXPENSE -->
+    <div class="view" id="view-fuel">
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Fuel &amp; Expense Logs</h2>
+            <div class="desc">Feeds operational cost per vehicle automatically</div>
+          </div>
+          <button class="btn" onclick="openModal('fuel')">+ Log Fuel / Expense</button>
+        </div>
+        <div class="panel-body">
+          <table>
+            <thead><tr><th>Vehicle</th><th>Type</th><th>Amount</th><th>Liters</th><th>Date</th></tr></thead>
+            <tbody id="fuel-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPORTS -->
+    <div class="view" id="view-reports">
+      <div class="report-grid">
+        <div class="panel">
+          <div class="panel-head"><div><h2>Fuel Efficiency</h2><div class="desc">Distance ÷ Fuel consumed (km/L)</div></div></div>
+          <div class="panel-body" id="report-efficiency"></div>
+        </div>
+        <div class="panel-head" style="display:none"></div>
+        <div class="panel">
+          <div class="panel-head"><div><h2>Fleet Utilization</h2><div class="desc">Share of time vehicles spend On Trip</div></div></div>
+          <div class="panel-body" id="report-utilization"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div><h2>Operational Cost</h2><div class="desc">Fuel + Maintenance, per vehicle</div></div></div>
+          <div class="panel-body" id="report-cost"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div><h2>Vehicle ROI</h2><div class="desc">(Revenue − (Maint + Fuel)) ÷ Acquisition Cost</div></div></div>
+          <div class="panel-body" id="report-roi"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          <div><h2>Export</h2><div class="desc">Download current report snapshot</div></div>
+          <button class="btn ghost" onclick="exportCSV()">⬇ Export CSV</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-backdrop" id="modal-backdrop">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modal-title">Register Vehicle</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-foot">
+      <button class="btn ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn" id="modal-submit">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<script>
+// ---------------- STATE ----------------
+let vehicles = [
+  {id:'v1', reg:'MH-04-AB-1234', name:'Van-05', type:'Van', maxLoad:500, odometer:18240, cost:850000, status:'OnTrip'},
+  {id:'v2', reg:'MH-04-CD-5678', name:'Truck-11', type:'Truck', maxLoad:2000, odometer:54210, cost:2100000, status:'Available'},
+  {id:'v3', reg:'MH-12-EF-9012', name:'Mini-02', type:'Mini Truck', maxLoad:800, odometer:9120, cost:640000, status:'InShop'},
+  {id:'v4', reg:'MH-04-GH-3456', name:'Van-08', type:'Van', maxLoad:500, odometer:31500, cost:820000, status:'Available'},
+  {id:'v5', reg:'MH-01-IJ-7890', name:'Truck-14', type:'Truck', maxLoad:2200, odometer:71000, cost:2300000, status:'Retired'},
+];
+let drivers = [
+  {id:'d1', name:'Alex Menon', license:'MH1420210001', expiry:'2027-03-15', contact:'98200XXXXX', safety:92, status:'OnTrip'},
+  {id:'d2', name:'Priya Rao', license:'MH1420210044', expiry:'2026-11-02', contact:'98210XXXXX', safety:88, status:'Available'},
+  {id:'d3', name:'Sunil Kadam', license:'MH1420190078', expiry:'2025-06-20', contact:'98220XXXXX', safety:65, status:'Suspended'},
+  {id:'d4', name:'Farah Sheikh', license:'MH1420220015', expiry:'2028-01-10', contact:'98230XXXXX', safety:95, status:'Available'},
+];
+let trips = [
+  {id:'t1', source:'Andheri Depot', dest:'Pune Hub', vehicleId:'v1', driverId:'d1', cargo:450, distance:150, status:'Dispatched'},
+  {id:'t2', source:'Thane Yard', dest:'Nashik Warehouse', vehicleId:null, driverId:null, cargo:300, distance:210, status:'Draft'},
+  {id:'t3', source:'Vashi Depot', dest:'Mumbai Port', vehicleId:'v4', driverId:'d4', cargo:480, distance:32, status:'Completed'},
+  {id:'t4', source:'Kalyan Yard', dest:'Aurangabad Hub', vehicleId:'v2', driverId:'d2', cargo:1200, distance:340, status:'Cancelled'},
+];
+let maintenance = [
+  {id:'m1', vehicleId:'v3', desc:'Oil change + brake inspection', opened:'2026-07-08', status:'Open'},
+];
+let fuelExpense = [
+  {id:'f1', vehicleId:'v1', type:'Fuel', amount:4200, liters:60, date:'2026-07-09'},
+  {id:'f2', vehicleId:'v2', type:'Toll', amount:850, liters:null, date:'2026-07-08'},
+  {id:'f3', vehicleId:'v3', type:'Maintenance', amount:6200, liters:null, date:'2026-07-08'},
+  {id:'f4', vehicleId:'v4', type:'Fuel', amount:3100, liters:44, date:'2026-07-07'},
+];
+let idSeq = 100;
+const genId = (p) => p + (idSeq++);
+
+const STATUS_COLORS = {
+  Available:'var(--ok)', OnTrip:'var(--warn)', InShop:'var(--danger)', Retired:'var(--neutral)',
+  Suspended:'var(--danger)', OffDuty:'var(--neutral)',
+  Draft:'var(--accent)', Dispatched:'var(--warn)', Completed:'var(--ok)', Cancelled:'var(--neutral)'
+};
+
+// ---------------- NAV ----------------
+document.querySelectorAll('.nav-item').forEach(el=>{
+  el.addEventListener('click', ()=>{
+    document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+    el.classList.add('active');
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    document.getElementById('view-'+el.dataset.view).classList.add('active');
+    const titles = {dashboard:['Dashboard','Live operational snapshot'], vehicles:['Vehicle Registry','Master data for the fleet'],
+      drivers:['Driver Management','Profiles and compliance'], trips:['Trip Management','Dispatch lifecycle board'],
+      maintenance:['Maintenance','Repair workflow'], fuel:['Fuel & Expense','Cost tracking per vehicle'],
+      reports:['Reports & Analytics','Operational insight']};
+    document.getElementById('topbar-title').textContent = titles[el.dataset.view][0];
+    document.getElementById('topbar-sub').textContent = titles[el.dataset.view][1];
+    if(el.dataset.view==='reports') renderReports();
+  });
+});
+
+// ---------------- CLOCK ----------------
+function tickClock(){
+  document.getElementById('clock-text').textContent = new Date().toLocaleTimeString('en-IN', {hour12:false});
+}
+setInterval(tickClock, 1000); tickClock();
+
+// ---------------- TOAST ----------------
+function toast(msg){
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  document.getElementById('toast-wrap').appendChild(el);
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transition='opacity 0.3s'; setTimeout(()=>el.remove(),300); }, 2800);
+}
+
+// ---------------- BADGE HELPER ----------------
+function statusBadge(status){
+  const clean = status.replace(/\s/g,'');
+  return `<span class="status-badge status-${clean}"><span class="sq"></span>${status}</span>`;
+}
+
+// ---------------- RENDER: PULSE STRIP ----------------
+function renderPulse(){
+  const track = document.getElementById('pulse-track');
+  const chips = vehicles.map(v=>`
+    <div class="pulse-chip">
+      <span class="sq" style="background:${STATUS_COLORS[v.status]}"></span>
+      <span class="reg">${v.reg}</span>
+      <span class="status">${v.status}</span>
+    </div>`).join('');
+  track.innerHTML = chips + chips; // duplicate for seamless loop
+}
+
+// ---------------- RENDER: KPIs ----------------
+function renderKPIs(){
+  const avail = vehicles.filter(v=>v.status==='Available').length;
+  const active = vehicles.filter(v=>v.status!=='Retired').length;
+  const inShop = vehicles.filter(v=>v.status==='InShop').length;
+  const activeTrips = trips.filter(t=>t.status==='Dispatched').length;
+  const pendingTrips = trips.filter(t=>t.status==='Draft').length;
+  const onDuty = drivers.filter(d=>d.status==='OnTrip'||d.status==='Available').length;
+  const utilization = active ? Math.round((trips.filter(t=>t.status==='Dispatched').length/active)*100) : 0;
+
+  const cards = [
+    {label:'Active Vehicles', value:active, unit:'', color:'var(--accent)'},
+    {label:'Available', value:avail, unit:'', color:'var(--ok)'},
+    {label:'In Maintenance', value:inShop, unit:'', color:'var(--danger)'},
+    {label:'Active Trips', value:activeTrips, unit:'', color:'var(--warn)'},
+    {label:'Pending Trips', value:pendingTrips, unit:'', color:'var(--accent)'},
+    {label:'Drivers On Duty', value:onDuty, unit:'', color:'var(--ok)'},
+    {label:'Fleet Utilization', value:utilization, unit:'%', color:'var(--warn)'},
+  ];
+  document.getElementById('kpi-grid').innerHTML = cards.map(c=>`
+    <div class="kpi-card">
+      <div class="accent-bar" style="background:${c.color}"></div>
+      <div class="kpi-label">${c.label}</div>
+      <div class="kpi-value">${c.value}<span class="unit">${c.unit}</span></div>
+    </div>`).join('');
+
+  document.getElementById('nav-trip-badge').textContent = pendingTrips;
+  document.getElementById('nav-trip-badge').style.display = pendingTrips ? 'inline-block':'none';
+  document.getElementById('nav-maint-badge').textContent = maintenance.filter(m=>m.status==='Open').length;
+  document.getElementById('nav-maint-badge').style.display = maintenance.filter(m=>m.status==='Open').length ? 'inline-block':'none';
+
+  // alerts
+  const alerts = [];
+  drivers.filter(d=>new Date(d.expiry) < new Date('2026-08-01')).forEach(d=>alerts.push(`⚠ ${d.name}'s license expires ${d.expiry} — flag before next dispatch`));
+  maintenance.filter(m=>m.status==='Open').forEach(m=>{
+    const v = vehicles.find(x=>x.id===m.vehicleId);
+    alerts.push(`🔧 ${v?v.reg:'—'} under repair: "${m.desc}"`);
+  });
+  const alertsBody = document.getElementById('alerts-body');
+  if(alerts.length){
+    alertsBody.innerHTML = alerts.map(a=>`<div style="padding:9px 0; border-bottom:1px solid var(--border); font-size:12.5px; color:var(--text-muted);">${a}</div>`).join('');
+  } else {
+    alertsBody.innerHTML = `<div class="empty-state"><div class="icon">✓</div><div class="title">All clear</div><div class="sub">No overdue returns or flagged alerts right now.</div></div>`;
+  }
+}
+
+// ---------------- RENDER: VEHICLES ----------------
+function renderVehicles(){
+  const search = (document.getElementById('veh-search').value||'').toLowerCase();
+  const statusF = document.getElementById('veh-status-filter').value;
+  const rows = vehicles.filter(v=>{
+    const matchesSearch = v.reg.toLowerCase().includes(search) || v.name.toLowerCase().includes(search);
+    const matchesStatus = !statusF || v.status===statusF;
+    return matchesSearch && matchesStatus;
+  });
+  document.getElementById('vehicles-table').innerHTML = rows.length ? rows.map(v=>`
+    <tr class="row-hover">
+      <td><span class="reg-tag">${v.reg}</span></td>
+      <td>${v.name}</td>
+      <td>${v.type}</td>
+      <td class="mono">${v.maxLoad} kg</td>
+      <td class="mono">${v.odometer.toLocaleString()} km</td>
+      <td>${statusBadge(v.status)}</td>
+      <td>
+        ${v.status!=='Retired' ? `<button class="btn ghost small" onclick="retireVehicle('${v.id}')">Retire</button>` : ''}
+      </td>
+    </tr>`).join('') : `<tr><td colspan="7"><div class="empty-state"><div class="icon">🚚</div><div class="title">No vehicles match</div><div class="sub">Try adjusting your search or filter.</div></div></td></tr>`;
+}
+document.getElementById('veh-search').addEventListener('input', renderVehicles);
+document.getElementById('veh-status-filter').addEventListener('change', renderVehicles);
+function retireVehicle(id){
+  const v = vehicles.find(x=>x.id===id);
+  if(v.status==='OnTrip'){ toast('Cannot retire — vehicle is currently on trip.'); return; }
+  v.status='Retired'; renderAll(); toast(`${v.reg} marked Retired.`);
+}
+
+// ---------------- RENDER: DRIVERS ----------------
+function renderDrivers(){
+  document.getElementById('drivers-table').innerHTML = drivers.map(d=>{
+    const expired = new Date(d.expiry) < new Date('2026-07-12');
+    return `
+    <tr class="row-hover">
+      <td>${d.name}</td>
+      <td class="mono">${d.license}</td>
+      <td class="mono" style="color:${expired?'var(--danger)':'var(--text-muted)'}">${d.expiry}${expired?' ⚠':''}</td>
+      <td class="mono">${d.safety}</td>
+      <td>${statusBadge(d.status)}</td>
+      <td>${d.status!=='Suspended' ? `<button class="btn ghost small" onclick="suspendDriver('${d.id}')">Suspend</button>` : `<button class="btn ghost small" onclick="reinstateDriver('${d.id}')">Reinstate</button>`}</td>
+    </tr>`;
+  }).join('');
+}
+function suspendDriver(id){ drivers.find(d=>d.id===id).status='Suspended'; renderAll(); toast('Driver suspended.'); }
+function reinstateDriver(id){ drivers.find(d=>d.id===id).status='Available'; renderAll(); toast('Driver reinstated.'); }
+
+// ---------------- RENDER: TRIPS (KANBAN) ----------------
+function renderTrips(){
+  const cols = ['Draft','Dispatched','Completed','Cancelled'];
+  document.getElementById('trip-kanban').innerHTML = cols.map(col=>{
+    const items = trips.filter(t=>t.status===col);
+    return `
+    <div class="kanban-col">
+      <div class="kanban-col-head"><span class="title">${col}</span><span class="count">${items.length}</span></div>
+      ${items.map(t=>{
+        const v = vehicles.find(x=>x.id===t.vehicleId);
+        const d = drivers.find(x=>x.id===t.driverId);
+        let actions = '';
+        if(t.status==='Draft') actions = `<button class="btn small" onclick="dispatchTrip('${t.id}')">Dispatch</button>`;
+        if(t.status==='Dispatched') actions = `<button class="btn small" onclick="completeTrip('${t.id}')">Complete</button><button class="btn small danger-outline" onclick="cancelTrip('${t.id}')">Cancel</button>`;
+        return `
+        <div class="trip-card">
+          <div class="route">${t.source} <span class="arrow">→</span> ${t.dest}</div>
+          <div class="meta">
+            ${v ? v.reg : '— no vehicle —'}<br>
+            ${d ? d.name : '— no driver —'}<br>
+            ${t.cargo} kg · ${t.distance} km
+          </div>
+          <div class="actions">${actions}</div>
+        </div>`;
+      }).join('') || `<div style="text-align:center;color:var(--text-dim);font-size:11.5px;padding:14px 0;">Empty</div>`}
+    </div>`;
+  }).join('');
+}
+
+function dispatchTrip(id){
+  const t = trips.find(x=>x.id===id);
+  if(!t.vehicleId || !t.driverId){ toast('Assign a vehicle and driver before dispatch.'); return; }
+  const v = vehicles.find(x=>x.id===t.vehicleId), d = drivers.find(x=>x.id===t.driverId);
+  if(v.status!=='Available'){ toast(`${v.reg} is not Available.`); return; }
+  if(d.status!=='Available'){ toast(`${d.name} is not Available.`); return; }
+  if(t.cargo > v.maxLoad){ toast(`Cargo ${t.cargo}kg exceeds ${v.reg}'s capacity of ${v.maxLoad}kg.`); return; }
+  t.status='Dispatched'; v.status='OnTrip'; d.status='OnTrip';
+  renderAll(); toast(`Trip dispatched — ${v.reg} & ${d.name} now On Trip.`);
+}
+function completeTrip(id){
+  const t = trips.find(x=>x.id===id);
+  const v = vehicles.find(x=>x.id===t.vehicleId), d = drivers.find(x=>x.id===t.driverId);
+  t.status='Completed'; if(v) v.status='Available'; if(d) d.status='Available';
+  renderAll(); toast('Trip completed — vehicle & driver back to Available.');
+}
+function cancelTrip(id){
+  const t = trips.find(x=>x.id===id);
+  const v = vehicles.find(x=>x.id===t.vehicleId), d = drivers.find(x=>x.id===t.driverId);
+  t.status='Cancelled'; if(v) v.status='Available'; if(d) d.status='Available';
+  renderAll(); toast('Trip cancelled — vehicle & driver restored to Available.');
+}
+
+// ---------------- RENDER: MAINTENANCE ----------------
+function renderMaintenance(){
+  document.getElementById('maint-table').innerHTML = maintenance.length ? maintenance.map(m=>{
+    const v = vehicles.find(x=>x.id===m.vehicleId);
+    return `
+    <tr class="row-hover">
+      <td><span class="reg-tag">${v?v.reg:'—'}</span></td>
+      <td>${m.desc}</td>
+      <td class="mono">${m.opened}</td>
+      <td>${statusBadge(m.status==='Open'?'InShop':'Available')}</td>
+      <td>${m.status==='Open' ? `<button class="btn small" onclick="closeMaintenance('${m.id}')">Close &amp; Restore</button>` : ''}</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="5"><div class="empty-state"><div class="icon">🔧</div><div class="title">No maintenance records</div><div class="sub">Log one from the button above.</div></div></td></tr>`;
+}
+function closeMaintenance(id){
+  const m = maintenance.find(x=>x.id===id);
+  m.status='Closed';
+  const v = vehicles.find(x=>x.id===m.vehicleId);
+  if(v && v.status!=='Retired') v.status='Available';
+  renderAll(); toast(`${v?v.reg:''} restored to Available.`);
+}
+
+// ---------------- RENDER: FUEL ----------------
+function renderFuel(){
+  document.getElementById('fuel-table').innerHTML = fuelExpense.map(f=>{
+    const v = vehicles.find(x=>x.id===f.vehicleId);
+    return `<tr class="row-hover">
+      <td><span class="reg-tag">${v?v.reg:'—'}</span></td>
+      <td>${f.type}</td>
+      <td class="mono">₹${f.amount.toLocaleString()}</td>
+      <td class="mono">${f.liters ?? '—'}</td>
+      <td class="mono">${f.date}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ---------------- RENDER: REPORTS ----------------
+function bar(label, value, max, color, suffix=''){
+  const pct = max ? Math.min(100,(value/max)*100) : 0;
+  return `<div class="bar-row">
+    <div class="bar-label">${label}</div>
+    <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div>
+    <div class="bar-val">${value}${suffix}</div>
+  </div>`;
+}
+function renderReports(){
+  // fuel efficiency
+  const eff = vehicles.filter(v=>v.status!=='Retired').map(v=>{
+    const logs = fuelExpense.filter(f=>f.vehicleId===v.id && f.type==='Fuel');
+    const liters = logs.reduce((s,f)=>s+(f.liters||0),0);
+    const tripDist = trips.filter(t=>t.vehicleId===v.id && t.status==='Completed').reduce((s,t)=>s+t.distance,0);
+    return {reg:v.reg.split('-').slice(-2).join(''), val: liters ? +(tripDist/liters).toFixed(1) : 0};
+  });
+  const maxEff = Math.max(...eff.map(e=>e.val),1);
+  document.getElementById('report-efficiency').innerHTML = eff.map(e=>bar(e.reg, e.val, maxEff, 'var(--ok)', ' km/L')).join('') || emptyReport();
+
+  // utilization
+  const util = vehicles.filter(v=>v.status!=='Retired').map(v=>({
+    reg:v.reg.split('-').slice(-2).join(''),
+    val: v.status==='OnTrip' ? 100 : (v.status==='InShop'?15:40)
+  }));
+  document.getElementById('report-utilization').innerHTML = util.map(u=>bar(u.reg,u.val,100,'var(--warn)','%')).join('') || emptyReport();
+
+  // cost
+  const cost = vehicles.map(v=>{
+    const total = fuelExpense.filter(f=>f.vehicleId===v.id).reduce((s,f)=>s+f.amount,0);
+    return {reg:v.reg.split('-').slice(-2).join(''), val: total};
+  });
+  const maxCost = Math.max(...cost.map(c=>c.val),1);
+  document.getElementById('report-cost').innerHTML = cost.map(c=>bar(c.reg,c.val,maxCost,'var(--accent)','')).join('') || emptyReport();
+
+  // ROI (mock revenue assumption for demo)
+  const roiHTML = vehicles.filter(v=>v.status!=='Retired').map(v=>{
+    const totalCost = fuelExpense.filter(f=>f.vehicleId===v.id).reduce((s,f)=>s+f.amount,0);
+    const mockRevenue = trips.filter(t=>t.vehicleId===v.id && t.status==='Completed').length * 18000;
+    const roi = v.cost ? (((mockRevenue - totalCost)/v.cost)*100).toFixed(1) : 0;
+    return `<div class="bar-row">
+      <div class="bar-label">${v.reg.split('-').slice(-2).join('')}</div>
+      <div style="flex:1; font-size:12px; color:var(--text-dim);">Revenue ₹${mockRevenue.toLocaleString()} · Cost ₹${totalCost.toLocaleString()}</div>
+      <div class="bar-val ${roi>=0?'roi-pos':'roi-neg'}">${roi}%</div>
+    </div>`;
+  }).join('');
+  document.getElementById('report-roi').innerHTML = roiHTML || emptyReport();
+}
+function emptyReport(){ return `<div class="empty-state"><div class="sub">Not enough data yet.</div></div>`; }
+
+function exportCSV(){
+  let csv = 'Vehicle,Type,Odometer,Status\n';
+  vehicles.forEach(v=>csv += `${v.reg},${v.type},${v.odometer},${v.status}\n`);
+  const blob = new Blob([csv], {type:'text/csv'});
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'transitops_report.csv';
+  link.click();
+  toast('CSV exported.');
+}
+
+// ---------------- MODALS ----------------
+function openModal(type){
+  const backdrop = document.getElementById('modal-backdrop');
+  const title = document.getElementById('modal-title');
+  const body = document.getElementById('modal-body');
+  const submit = document.getElementById('modal-submit');
+  backdrop.classList.add('active');
+
+  if(type==='vehicle'){
+    title.textContent='Register Vehicle';
+    body.innerHTML = `
+      <div id="modal-error" class="validation-msg"></div>
+      <div class="field-row">
+        <div class="field"><label>Registration Number</label><input type="text" id="f-reg" placeholder="MH-04-XY-0000"></div>
+        <div class="field"><label>Name / Model</label><input type="text" id="f-name" placeholder="Van-09"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Type</label>
+          <select id="f-type"><option>Van</option><option>Truck</option><option>Mini Truck</option><option>Bike</option></select>
+        </div>
+        <div class="field"><label>Max Load (kg)</label><input type="number" id="f-load" placeholder="500"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Odometer (km)</label><input type="number" id="f-odo" placeholder="0"></div>
+        <div class="field"><label>Acquisition Cost (₹)</label><input type="number" id="f-cost" placeholder="800000"></div>
+      </div>
+    `;
+    submit.onclick = ()=>{
+      const reg = document.getElementById('f-reg').value.trim();
+      const err = document.getElementById('modal-error');
+      if(!reg){ err.textContent='Registration number is required.'; err.classList.add('active'); return; }
+      if(vehicles.some(v=>v.reg.toLowerCase()===reg.toLowerCase())){ err.textContent='Registration number must be unique — this one already exists.'; err.classList.add('active'); return; }
+      vehicles.push({
+        id: genId('v'), reg, name: document.getElementById('f-name').value || 'Unnamed',
+        type: document.getElementById('f-type').value,
+        maxLoad: +document.getElementById('f-load').value || 0,
+        odometer: +document.getElementById('f-odo').value || 0,
+        cost: +document.getElementById('f-cost').value || 0,
+        status:'Available'
+      });
+      closeModal(); renderAll(); toast(`${reg} registered — status Available.`);
+    };
+  }
+
+  if(type==='driver'){
+    title.textContent='Add Driver';
+    body.innerHTML = `
+      <div class="field"><label>Name</label><input type="text" id="f-dname" placeholder="Full name"></div>
+      <div class="field-row">
+        <div class="field"><label>License Number</label><input type="text" id="f-lic" placeholder="MH1420XXXXXX"></div>
+        <div class="field"><label>License Expiry</label><input type="date" id="f-exp"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Contact</label><input type="text" id="f-contact" placeholder="98XXXXXXXX"></div>
+        <div class="field"><label>Safety Score</label><input type="number" id="f-safety" placeholder="0–100"></div>
+      </div>
+    `;
+    submit.onclick = ()=>{
+      const name = document.getElementById('f-dname').value.trim();
+      if(!name){ toast('Name is required.'); return; }
+      drivers.push({
+        id: genId('d'), name,
+        license: document.getElementById('f-lic').value || '—',
+        expiry: document.getElementById('f-exp').value || '2027-01-01',
+        contact: document.getElementById('f-contact').value || '—',
+        safety: +document.getElementById('f-safety').value || 80,
+        status:'Available'
+      });
+      closeModal(); renderAll(); toast(`${name} added — status Available.`);
+    };
+  }
+
+  if(type==='trip'){
+    title.textContent='Create Trip';
+    const availVehicles = vehicles.filter(v=>v.status==='Available');
+    const availDrivers = drivers.filter(d=>d.status==='Available' && new Date(d.expiry) > new Date('2026-07-12'));
+    body.innerHTML = `
+      <div id="modal-error" class="validation-msg"></div>
+      <div class="field-row">
+        <div class="field"><label>Source</label><input type="text" id="f-src" placeholder="Origin depot"></div>
+        <div class="field"><label>Destination</label><input type="text" id="f-dest" placeholder="Destination hub"></div>
+      </div>
+      <div class="field">
+        <label>Vehicle (Available only)</label>
+        <select id="f-veh"><option value="">— select —</option>${availVehicles.map(v=>`<option value="${v.id}">${v.reg} · max ${v.maxLoad}kg</option>`).join('')}</select>
+        ${!availVehicles.length ? '<div class="hint">No vehicles currently Available.</div>' : ''}
+      </div>
+      <div class="field">
+        <label>Driver (Available + valid license only)</label>
+        <select id="f-drv"><option value="">— select —</option>${availDrivers.map(d=>`<option value="${d.id}">${d.name}</option>`).join('')}</select>
+        ${!availDrivers.length ? '<div class="hint">No eligible drivers currently Available.</div>' : ''}
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Cargo Weight (kg)</label><input type="number" id="f-cargo" placeholder="0"></div>
+        <div class="field"><label>Planned Distance (km)</label><input type="number" id="f-dist" placeholder="0"></div>
+      </div>
+    `;
+    submit.onclick = ()=>{
+      const err = document.getElementById('modal-error');
+      const vehId = document.getElementById('f-veh').value;
+      const cargo = +document.getElementById('f-cargo').value || 0;
+      if(vehId){
+        const v = vehicles.find(x=>x.id===vehId);
+        if(cargo > v.maxLoad){ err.textContent = `Cargo ${cargo}kg exceeds ${v.reg}'s max load of ${v.maxLoad}kg.`; err.classList.add('active'); return; }
+      }
+      trips.push({
+        id: genId('t'),
+        source: document.getElementById('f-src').value || 'Origin',
+        dest: document.getElementById('f-dest').value || 'Destination',
+        vehicleId: vehId || null,
+        driverId: document.getElementById('f-drv').value || null,
+        cargo, distance: +document.getElementById('f-dist').value || 0,
+        status:'Draft'
+      });
+      closeModal(); renderAll(); toast('Trip created as Draft.');
+    };
+  }
+
+  if(type==='maint'){
+    title.textContent='Log Maintenance';
+    const eligible = vehicles.filter(v=>v.status!=='InShop' && v.status!=='Retired');
+    body.innerHTML = `
+      <div class="field">
+        <label>Vehicle</label>
+        <select id="f-mveh">${eligible.map(v=>`<option value="${v.id}">${v.reg}</option>`).join('')}</select>
+      </div>
+      <div class="field"><label>Issue Description</label><input type="text" id="f-mdesc" placeholder="e.g. Brake pad replacement"></div>
+    `;
+    submit.onclick = ()=>{
+      const vehId = document.getElementById('f-mveh').value;
+      if(!vehId){ toast('No eligible vehicle selected.'); return; }
+      const v = vehicles.find(x=>x.id===vehId);
+      if(v.status==='OnTrip'){ toast('Vehicle is currently On Trip — complete or cancel the trip first.'); return; }
+      maintenance.push({ id: genId('m'), vehicleId: vehId, desc: document.getElementById('f-mdesc').value || 'General service', opened: '2026-07-12', status:'Open' });
+      v.status='InShop';
+      closeModal(); renderAll(); toast(`${v.reg} moved to In Shop — hidden from dispatch.`);
+    };
+  }
+
+  if(type==='fuel'){
+    title.textContent='Log Fuel / Expense';
+    body.innerHTML = `
+      <div class="field">
+        <label>Vehicle</label>
+        <select id="f-fveh">${vehicles.map(v=>`<option value="${v.id}">${v.reg}</option>`).join('')}</select>
+      </div>
+      <div class="field">
+        <label>Type</label>
+        <select id="f-ftype"><option>Fuel</option><option>Toll</option><option>Maintenance</option><option>Other</option></select>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Amount (₹)</label><input type="number" id="f-famt" placeholder="0"></div>
+        <div class="field"><label>Liters (if fuel)</label><input type="number" id="f-fliters" placeholder="optional"></div>
+      </div>
+    `;
+    submit.onclick = ()=>{
+      fuelExpense.push({
+        id: genId('f'), vehicleId: document.getElementById('f-fveh').value,
+        type: document.getElementById('f-ftype').value,
+        amount: +document.getElementById('f-famt').value || 0,
+        liters: document.getElementById('f-fliters').value ? +document.getElementById('f-fliters').value : null,
+        date: '2026-07-12'
+      });
+      closeModal(); renderAll(); toast('Log recorded.');
+    };
+  }
+}
+function closeModal(){
+  document.getElementById('modal-backdrop').classList.remove('active');
+}
+document.getElementById('modal-backdrop').addEventListener('click', (e)=>{
+  if(e.target.id==='modal-backdrop') closeModal();
+});
+
+// ---------------- MASTER RENDER ----------------
+function renderAll(){
+  renderPulse();
+  renderKPIs();
+  renderVehicles();
+  renderDrivers();
+  renderTrips();
+  renderMaintenance();
+  renderFuel();
+}
+renderAll();
+</script>
+</body>
+</html>
