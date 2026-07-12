@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { ApiResponse } from "@/lib/utils/api-response";
 import { maintenanceSchema } from "@/schemas/validation";
 import { getAuthenticatedUser } from "@/lib/auth";
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
     const { vehicleId, description, cost, date } = validationResult.data;
     
     // Wrap all operations in an atomic transaction (BUG-6)
-    const log = await prisma.$transaction(async (tx) => {
+    const log = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const vehicle = await tx.vehicle.findUnique({ where: { id: vehicleId } })
       if (!vehicle) throw new Error("Vehicle not found")
       

@@ -7,6 +7,14 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Role enum for type-safe RBAC role assignment
+enum RoleType {
+  FLEET_MANAGER
+  DRIVER
+  SAFETY_OFFICER
+  FINANCIAL_ANALYST
+}
+
 model User {
   id               String    @id @default(uuid())
   name             String
@@ -16,7 +24,21 @@ model User {
   failedLoginCount Int       @default(0)
   lockedUntil      DateTime?
   createdAt        DateTime  @default(now())
+
+  // Junction table to represent multiple allowed roles per user
+  userRoles        UserRole[]
 }
+
+// Junction model linking Users to their allowed roles (many-to-many)
+model UserRole {
+  userId     String
+  role       RoleType
+  assignedAt DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, role])
+}
+
 
 model Vehicle {
   id                 String    @id @default(uuid())
