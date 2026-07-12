@@ -168,32 +168,35 @@ export const TripTable = memo(function TripTable({ onActionClick }: TripTablePro
                     {getStatusBadge(trip.status)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
-                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center justify-end gap-2">
                       {(trip.status || '').toUpperCase() === 'DRAFT' && (
                         <>
                           <button 
                             onClick={() => onActionClick(trip.id, 'dispatch')}
-                            className="p-1.5 bg-status-dispatched/10 text-status-dispatched rounded hover:bg-status-dispatched/20 transition-colors"
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border border-status-dispatched/30 bg-status-dispatched/10 text-status-dispatched hover:bg-status-dispatched/20 transition-all shadow-sm"
                             title="Dispatch Trip"
                           >
-                            <Navigation size={16} />
+                            <Navigation size={14} strokeWidth={2.5} />
+                            Dispatch
                           </button>
                           <button 
                             onClick={() => onActionClick(trip.id, 'cancel')}
-                            className="p-1.5 bg-status-cancelled/10 text-status-cancelled rounded hover:bg-status-cancelled/20 transition-colors"
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border border-status-cancelled/30 bg-status-cancelled/10 text-status-cancelled hover:bg-status-cancelled/20 transition-all shadow-sm"
                             title="Cancel Trip"
                           >
-                            <XCircle size={16} />
+                            <XCircle size={14} strokeWidth={2.5} />
+                            Cancel
                           </button>
                         </>
                       )}
                       {(trip.status || '').toUpperCase() === 'DISPATCHED' && (
                         <button 
                           onClick={() => onActionClick(trip.id, 'complete')}
-                          className="p-1.5 bg-emerald-500/10 text-emerald-400 rounded hover:bg-emerald-500/20 transition-colors"
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-all shadow-sm"
                           title="Complete Trip"
                         >
-                          <CheckCircle size={16} />
+                          <CheckCircle size={14} strokeWidth={2.5} />
+                          Complete
                         </button>
                       )}
                     </div>
