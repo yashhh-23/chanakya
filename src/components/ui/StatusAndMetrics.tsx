@@ -189,6 +189,34 @@ export const statusConfig: Record<OperationalStatus, {
     textSubtle: 'rgb(75, 85, 99)',
     icon: FileText,
   },
+  Draft: {
+    label: 'Draft',
+    colorVar: 'var(--status-draft)',
+    bgSubtle: 'rgba(107, 114, 128, 0.1)',
+    textSubtle: 'rgb(75, 85, 99)',
+    icon: FileText,
+  },
+  Dispatched: {
+    label: 'Dispatched',
+    colorVar: 'var(--status-dispatched)',
+    bgSubtle: 'rgba(249, 115, 22, 0.1)',
+    textSubtle: 'rgb(234, 88, 12)',
+    icon: Clock,
+  },
+  Completed: {
+    label: 'Completed',
+    colorVar: 'var(--status-available)',
+    bgSubtle: 'rgba(16, 185, 129, 0.1)',
+    textSubtle: 'rgb(5, 150, 105)',
+    icon: CheckCircle,
+  },
+  Cancelled: {
+    label: 'Cancelled',
+    colorVar: 'var(--status-cancelled)',
+    bgSubtle: 'rgba(239, 68, 68, 0.1)',
+    textSubtle: 'rgb(220, 38, 38)',
+    icon: XCircle,
+  },
 };
 
 export const StatusPill = memo(function StatusPill({

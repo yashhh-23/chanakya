@@ -1,10 +1,10 @@
-﻿export type UserRole = 'FLEET_MANAGER' | 'DRIVER' | 'SAFETY_OFFICER' | 'FINANCIAL_ANALYST';
+export type UserRole = 'FLEET_MANAGER' | 'DRIVER' | 'SAFETY_OFFICER' | 'FINANCIAL_ANALYST';
 
 export type VehicleStatus = 'AVAILABLE' | 'ON_TRIP' | 'DISPATCHED' | 'IN_SHOP' | 'SUSPENDED' | 'RETIRED';
 export type DriverStatus = 'AVAILABLE' | 'ON_TRIP' | 'OFF_DUTY' | 'SUSPENDED';
-export type TripStatus = 'DRAFT' | 'DISPATCHED' | 'ON_TRIP' | 'COMPLETED' | 'CANCELLED';
+export type TripStatus = 'Draft' | 'Dispatched' | 'Completed' | 'Cancelled';
 
-export type OperationalStatus = VehicleStatus | DriverStatus | TripStatus;
+export type OperationalStatus = VehicleStatus | DriverStatus | TripStatus | 'DRAFT' | 'DISPATCHED' | 'ON_TRIP' | 'COMPLETED' | 'CANCELLED';
 
 export interface Vehicle {
   id?: string;
@@ -45,11 +45,22 @@ export interface ToastMessage {
 
 export interface Trip {
   id: string;
-  vehicleReg: string;
-  driverName: string;
-  route: string;
+  source: string;
+  destination: string;
+  vehicleId: string;
+  driverId: string;
+  cargoWeight: number;
+  plannedDistance: number;
   status: TripStatus;
-  date: string;
-  fuelConsumption?: number;
-  cost?: number;
+  startOdometer?: number | null;
+  endOdometer?: number | null;
+  fuelConsumed?: number | null;
+  revenue?: number | null;
+  createdAt: string;
+
+  // UI state fields
+  vehicle?: Vehicle;
+  driver?: Driver;
+  eta?: string;
+  blockingReason?: string;
 }

@@ -17,6 +17,10 @@ interface DataContextType {
   refreshData: () => Promise<void>;
   addVehicle: (vehicle: Vehicle) => Promise<ApiFieldResult>;
   addDriver: (driver: Driver) => Promise<ApiFieldResult>;
+  addTrip: (trip: Omit<Trip, 'id' | 'status' | 'createdAt'>) => Promise<ApiFieldResult>;
+  dispatchTrip: (id: string) => Promise<ApiFieldResult>;
+  completeTrip: (id: string) => Promise<ApiFieldResult>;
+  cancelTrip: (id: string) => Promise<ApiFieldResult>;
   stats: {
     activeFleetCount: number;
     driversOnDutyCount: number;
@@ -56,8 +60,14 @@ type ApiTrip = {
   id: string;
   source: string;
   destination: string;
+  vehicleId: string;
+  driverId: string;
+  cargoWeight: number;
+  plannedDistance: number;
   status: string;
   createdAt: string;
+  startOdometer?: number | null;
+  endOdometer?: number | null;
   fuelConsumed?: number | null;
   revenue?: number | null;
   vehicle?: ApiVehicle;
@@ -111,13 +121,20 @@ const mapDriver = (driver: ApiDriver): Driver => ({
 
 const mapTrip = (trip: ApiTrip): Trip => ({
   id: trip.id,
-  vehicleReg: trip.vehicle?.registrationNumber || 'Unassigned',
-  driverName: trip.driver?.name || 'Unassigned',
-  route: `${trip.source} -> ${trip.destination}`,
-  status: statusToUi<TripStatus>(trip.status, 'DRAFT'),
-  date: new Date(trip.createdAt).toISOString().slice(0, 10),
-  fuelConsumption: trip.fuelConsumed ?? undefined,
-  cost: trip.revenue ?? undefined,
+  source: trip.source,
+  destination: trip.destination,
+  vehicleId: trip.vehicleId,
+  driverId: trip.driverId,
+  cargoWeight: Number(trip.cargoWeight),
+  plannedDistance: Number(trip.plannedDistance),
+  status: statusToUi<TripStatus>(trip.status, 'Draft'),
+  startOdometer: trip.startOdometer ? Number(trip.startOdometer) : null,
+  endOdometer: trip.endOdometer ? Number(trip.endOdometer) : null,
+  fuelConsumed: trip.fuelConsumed ? Number(trip.fuelConsumed) : null,
+  revenue: trip.revenue ? Number(trip.revenue) : null,
+  createdAt: new Date(trip.createdAt).toISOString(),
+  vehicle: trip.vehicle ? mapVehicle(trip.vehicle) : undefined,
+  driver: trip.driver ? mapDriver(trip.driver) : undefined,
 });
 
 async function readJson<T>(url: string): Promise<T> {
@@ -226,11 +243,51 @@ export function DataProvider({children}: {children: ReactNode}) {
     }
   }, []);
 
+  const addTrip = useCallback(async (newTrip: Omit<Trip, 'id' | 'status' | 'createdAt'>): Promise<ApiFieldResult> => {
+    try {
+      const response = await fetch('/api/trips', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(newTrip),
+      });
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        return {success: false, error: {field: 'source', message: payload?.error || 'Trip creation failed.'}};
+      }
+      
+      const tripData = payload?.success && payload?.data ? payload.data : payload;
+      setTrips((prev) => [mapTrip(tripData as ApiTrip), ...prev]);
+      return {success: true};
+    } catch (err) {
+      return {success: false, error: {field: 'source', message: err instanceof Error ? err.message : 'Trip creation failed.'}};
+    }
+  }, []);
+
+  const changeTripStatus = useCallback(async (id: string, action: 'dispatch' | 'complete' | 'cancel'): Promise<ApiFieldResult> => {
+    try {
+      const response = await fetch(`/api/trips/${id}/${action}`, { method: 'POST' });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        return {success: false, error: {field: 'status', message: payload?.error || `Failed to ${action} trip.`}};
+      }
+      const tripData = payload?.success && payload?.data ? payload.data : payload;
+      setTrips((prev) => prev.map(t => t.id === id ? mapTrip(tripData as ApiTrip) : t));
+      return {success: true};
+    } catch (err) {
+      return {success: false, error: {field: 'status', message: err instanceof Error ? err.message : `Failed to ${action} trip.`}};
+    }
+  }, []);
+
+  const dispatchTrip = useCallback((id: string) => changeTripStatus(id, 'dispatch'), [changeTripStatus]);
+  const completeTrip = useCallback((id: string) => changeTripStatus(id, 'complete'), [changeTripStatus]);
+  const cancelTrip = useCallback((id: string) => changeTripStatus(id, 'cancel'), [changeTripStatus]);
+
   const stats = useMemo(() => {
     const activeFleetCount = vehicles.filter((v) => v.status !== 'RETIRED').length;
     const driversOnDutyCount = drivers.filter((d) => d.status === 'AVAILABLE' || d.status === 'ON_TRIP').length;
     const vehiclesInShopCount = vehicles.filter((v) => v.status === 'IN_SHOP').length;
-    const todayTripsCount = trips.filter((t) => t.status === 'DISPATCHED' || t.status === 'ON_TRIP').length;
+    const todayTripsCount = trips.filter((t) => t.status === 'Dispatched' || t.status === 'Completed').length;
     const activeVehiclesCount = vehicles.filter((v) => v.status === 'ON_TRIP' || v.status === 'DISPATCHED').length;
     const fleetUtilizationPercent = activeFleetCount > 0 ? Math.round((activeVehiclesCount / activeFleetCount) * 100) : 0;
 
@@ -252,8 +309,12 @@ export function DataProvider({children}: {children: ReactNode}) {
     refreshData,
     addVehicle,
     addDriver,
+    addTrip,
+    dispatchTrip,
+    completeTrip,
+    cancelTrip,
     stats,
-  }), [vehicles, drivers, trips, loading, error, refreshData, addVehicle, addDriver, stats]);
+  }), [vehicles, drivers, trips, loading, error, refreshData, addVehicle, addDriver, addTrip, dispatchTrip, completeTrip, cancelTrip, stats]);
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 }

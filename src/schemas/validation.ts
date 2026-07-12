@@ -99,3 +99,17 @@ export const loginSchema = z.object({
 });
 
 export type LoginFormValues = z.infer<typeof loginSchema>;
+
+// ==========================================
+// Trip Validation Schema
+// ==========================================
+export const tripSchema = z.object({
+  source: z.string().min(2, 'Source location is required'),
+  destination: z.string().min(2, 'Destination location is required'),
+  vehicleId: z.string().min(1, 'Vehicle selection is required'),
+  driverId: z.string().min(1, 'Driver selection is required'),
+  cargoWeight: z.coerce.number().gt(0, 'Cargo weight must be greater than 0'),
+  plannedDistance: z.coerce.number().gt(0, 'Planned distance must be greater than 0'),
+});
+
+export type TripFormValues = z.infer<typeof tripSchema>;

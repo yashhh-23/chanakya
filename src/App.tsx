@@ -11,6 +11,7 @@ import {ToastContainer} from './components/ui/Feedback';
 import {DashboardPage} from './features/dashboard/DashboardPage';
 import {VehicleRegistryPage} from './features/fleet/VehicleRegistryPage';
 import {DriverDirectoryPage} from './features/drivers/DriverDirectoryPage';
+import {TripDispatcherPage} from './features/trips/TripDispatcherPage';
 import {AuthPage} from './features/auth/AuthPage';
 
 const AppContent = memo(function AppContent({ initialTab = 'dashboard' }: { initialTab?: ActiveTab }) {
@@ -40,6 +41,7 @@ const AppContent = memo(function AppContent({ initialTab = 'dashboard' }: { init
       {activeTab === 'dashboard' && <DashboardPage />}
       {activeTab === 'vehicles' && <VehicleRegistryPage />}
       {activeTab === 'drivers' && <DriverDirectoryPage />}
+      {activeTab === 'trips' && <TripDispatcherPage />}
       <ToastContainer />
     </AppShell>
   );

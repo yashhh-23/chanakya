@@ -18,14 +18,15 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  ShieldCheck
+  ShieldCheck,
+  MapPin
 } from 'lucide-react';
 import {useAuth} from '../../contexts/AuthContext';
 import {useTheme} from '../../contexts/ThemeContext';
 import {RoleBadge} from '../ui/StatusAndMetrics';
 import {UserRole} from '../../types';
 
-export type ActiveTab = 'dashboard' | 'vehicles' | 'drivers';
+export type ActiveTab = 'dashboard' | 'vehicles' | 'drivers' | 'trips';
 
 interface AppShellProps {
   activeTab: ActiveTab;
@@ -56,6 +57,7 @@ export const AppShell = memo(function AppShell({
 
   const navItems = [
     {id: 'dashboard' as ActiveTab, label: 'Dashboard', icon: LayoutDashboard},
+    {id: 'trips' as ActiveTab, label: 'Trip Dispatcher', icon: MapPin},
     {id: 'vehicles' as ActiveTab, label: 'Vehicle Registry', icon: Truck},
     {id: 'drivers' as ActiveTab, label: 'Driver Directory', icon: Users},
   ];
