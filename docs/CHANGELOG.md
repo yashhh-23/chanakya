@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
+- [`63b3432`](https://github.com/yashhh-23/chanakya/commit/63b3432b320c9ae185a843935cb875da53fbdd2b) FEATURE: Add Next.js foundation, Prisma schema, and core API endpoints
 - [`5a13e03`](https://github.com/yashhh-23/chanakya/commit/5a13e03d2515a644b13a3f263c34dd644733a38e) FEATURE: Add dummy file to test GitHub bot
 
 ### Fixed
