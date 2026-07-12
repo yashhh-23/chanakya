@@ -1,0 +1,99 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import {z} from 'zod';
+
+// ==========================================
+// Vehicle Validation Schema
+// ==========================================
+export const vehicleSchema = z.object({
+  regNumber: z
+    .string()
+    .min(1, 'Registration number is required')
+    .regex(/^[A-Z0-9-\s]{4,15}$/i, 'Invalid registration number format (e.g., MH-04-EX-8891)'),
+  name: z
+    .string()
+    .min(2, 'Vehicle name must be at least 2 characters')
+    .max(50, 'Vehicle name is too long'),
+  type: z
+    .string()
+    .min(1, 'Vehicle type is required'),
+  maxCapacity: z
+    .coerce
+    .number()
+    .gt(0, 'Capacity must be greater than 0'),
+  odometer: z
+    .coerce
+    .number()
+    .gte(0, 'Odometer cannot be negative'),
+  acquisitionCost: z
+    .coerce
+    .number()
+    .gt(0, 'Acquisition cost must be greater than 0'),
+  region: z
+    .string()
+    .min(1, 'Region is required'),
+  status: z
+    .enum(['AVAILABLE', 'ON_TRIP', 'DISPATCHED', 'IN_SHOP', 'SUSPENDED', 'RETIRED'])
+    .default('AVAILABLE'),
+});
+
+export type VehicleFormValues = z.infer<typeof vehicleSchema>;
+
+// ==========================================
+// Driver Validation Schema
+// ==========================================
+export const driverSchema = z.object({
+  name: z
+    .string()
+    .min(2, 'Driver name must be at least 2 characters')
+    .regex(/^[a-zA-Z\s]+$/, 'Driver name can only contain letters and spaces'),
+  licenseNumber: z
+    .string()
+    .min(5, 'License number is required')
+    .regex(/^[A-Z0-9-\s]{5,20}$/i, 'Invalid license number format'),
+  category: z
+    .string()
+    .min(1, 'License category is required'),
+  licenseExpiry: z
+    .string()
+    .min(1, 'License expiry date is required')
+    .refine((val) => {
+      const selectedDate = new Date(val);
+      const today = new Date();
+      // Set to midnight for standard date comparison
+      today.setHours(0, 0, 0, 0);
+      return selectedDate > today;
+    }, 'License expiry must be in the future'),
+  contactNumber: z
+    .string()
+    .min(10, 'Contact number must be at least 10 digits')
+    .regex(/^\+?[1-9]\d{1,14}$|^[0-9]{10,12}$/, 'Invalid contact number format (e.g. +919876543210 or 10-digit number)'),
+  status: z
+    .enum(['AVAILABLE', 'ON_TRIP', 'SUSPENDED'])
+    .default('AVAILABLE'),
+});
+
+export type DriverFormValues = z.infer<typeof driverSchema>;
+
+// ==========================================
+// Authentication Validation Schema
+// ==========================================
+export const loginSchema = z.object({
+  email: z
+    .string()
+    .min(1, 'Email is required')
+    .email('Invalid email address format'),
+  password: z
+    .string()
+    .min(6, 'Password must be at least 6 characters'),
+  role: z
+    .enum(['FLEET_MANAGER', 'DRIVER', 'SAFETY_OFFICER', 'FINANCIAL_ANALYST']),
+  rememberMe: z
+    .boolean()
+    .default(false),
+});
+
+export type LoginFormValues = z.infer<typeof loginSchema>;
