@@ -34,8 +34,8 @@ export const TripTable = memo(function TripTable({ onActionClick }: TripTablePro
     return trips.filter(trip => {
       const matchesSearch = trip.destination.toLowerCase().includes(searchTerm.toLowerCase()) || 
                             trip.source.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            trip.vehicle?.regNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            trip.driver?.name.toLowerCase().includes(searchTerm.toLowerCase());
+                            (trip.vehicle?.regNumber || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            (trip.driver?.name || '').toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === 'All' || trip.status === statusFilter;
       return matchesSearch && matchesStatus;
     }).sort((a, b) => {

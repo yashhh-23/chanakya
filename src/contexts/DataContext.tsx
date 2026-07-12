@@ -19,7 +19,7 @@ interface DataContextType {
   addDriver: (driver: Driver) => Promise<ApiFieldResult>;
   addTrip: (trip: Omit<Trip, 'id' | 'status' | 'createdAt'>) => Promise<ApiFieldResult>;
   dispatchTrip: (id: string) => Promise<ApiFieldResult>;
-  completeTrip: (id: string) => Promise<ApiFieldResult>;
+  completeTrip: (id: string, completionData?: { endOdometer: number, fuelConsumed: number }) => Promise<ApiFieldResult>;
   cancelTrip: (id: string) => Promise<ApiFieldResult>;
   updateDriver: (id: string, driver: Partial<Driver>) => Promise<ApiFieldResult>;
   changeDriverStatus: (id: string, status: DriverStatus) => Promise<ApiFieldResult>;
@@ -271,23 +271,30 @@ export function DataProvider({children}: {children: ReactNode}) {
     }
   }, []);
 
-  const changeTripStatus = useCallback(async (id: string, action: 'dispatch' | 'complete' | 'cancel'): Promise<ApiFieldResult> => {
+  const changeTripStatus = useCallback(async (id: string, action: 'dispatch' | 'complete' | 'cancel', body?: any): Promise<ApiFieldResult> => {
     try {
-      const response = await fetch(`/api/trips/${id}/${action}`, { method: 'POST' });
+      const response = await fetch(`/api/trips/${id}/${action}`, {
+        method: 'POST',
+        headers: body ? { 'Content-Type': 'application/json' } : undefined,
+        body: body ? JSON.stringify(body) : undefined,
+      });
       const payload = await response.json().catch(() => null);
       if (!response.ok) {
         return {success: false, error: {field: 'status', message: payload?.error || `Failed to ${action} trip.`}};
       }
       const tripData = payload?.success && payload?.data ? payload.data : payload;
-      setTrips((prev) => prev.map(t => t.id === id ? mapTrip(tripData as ApiTrip) : t));
+      
+      // Re-fetch all data to ensure local cache has fresh vehicle and driver statuses updated instantly
+      void refreshData();
+      
       return {success: true};
     } catch (err) {
       return {success: false, error: {field: 'status', message: err instanceof Error ? err.message : `Failed to ${action} trip.`}};
     }
-  }, []);
+  }, [refreshData]);
 
   const dispatchTrip = useCallback((id: string) => changeTripStatus(id, 'dispatch'), [changeTripStatus]);
-  const completeTrip = useCallback((id: string) => changeTripStatus(id, 'complete'), [changeTripStatus]);
+  const completeTrip = useCallback((id: string, completionData?: { endOdometer: number, fuelConsumed: number }) => changeTripStatus(id, 'complete', completionData), [changeTripStatus]);
   const cancelTrip = useCallback((id: string) => changeTripStatus(id, 'cancel'), [changeTripStatus]);
 
   const updateDriver = useCallback(async (id: string, updated: Partial<Driver>): Promise<ApiFieldResult> => {
