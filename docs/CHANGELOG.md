@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
+- [`d95b66e`](https://github.com/yashhh-23/chanakya/commit/d95b66e1fc95f6f1f5bd4dd1ab48cb8a5fadea41) FEATURE: Implement Phase 2 Dashboard KPI telemetry, Fuel & Expenses two-panel interactive screens, and API endpoints
+- FEATURE: Implement Phase 2 Dashboard KPI cards & API endpoints, Fuel & Expenses two-panel interactive page, and role-aware navigation
+- [`57a72c7`](https://github.com/yashhh-23/chanakya/commit/57a72c7463801e5d084a9efe5af9a48c2de494c0) FEATURE: Implement Phase 2 Vehicle & Driver screens and merge local changes
+- [`5215cc3`](https://github.com/yashhh-23/chanakya/commit/5215cc32175307a84e7f31eb196c10cae69e843f) FEATURE: Implement Phase 2 Dashboard KPI telemetry, Fuel & Expenses two-panel interactive screens, and API endpoints
+- [`6aa452b`](https://github.com/yashhh-23/chanakya/commit/6aa452ba75fa993088be4b8c3fdf2df7722074bc) FEATURE: integrate phase 1 TransitOps frontend with Next app
 - [`921900a`](https://github.com/yashhh-23/chanakya/commit/921900a5650e0301e553ed398e66edaf2b6353da) FEATURE: integrate phase 1 TransitOps frontend with Next app
 - [`c0dad24`](https://github.com/yashhh-23/chanakya/commit/c0dad24990b53beb3dd33a6eee03f4e1dc6cc701) FEATURE: Add realistic Prisma database seeding script and configure tsx runner
 - FEATURE: Implement Prisma database seeding script with realistic fleet management datasets for all roles
@@ -12,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - [`5a13e03`](https://github.com/yashhh-23/chanakya/commit/5a13e03d2515a644b13a3f263c34dd644733a38e) FEATURE: Add dummy file to test GitHub bot
 
 ### Fixed
+- [`b8622d5`](https://github.com/yashhh-23/chanakya/commit/b8622d53d790ecee3f101c688b8662a1e5248bcb) UI: Add EmptyState component to fix build error
 
 ### Changed
 - [`9b5759c`](https://github.com/yashhh-23/chanakya/commit/9b5759c69ad3f5141e5f699918fba7a4d31a9f40) DOCS: UPDATE THE READ.me and

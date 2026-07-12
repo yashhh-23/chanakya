@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -413,4 +413,33 @@ export const KpiCard = memo(function KpiCard({
   );
 });
 
+// ==========================================
+// EmptyState Component
+// ==========================================
+interface EmptyStateProps {
+  title: string;
+  description?: string;
+  icon?: ReactNode;
+  action?: {
+    label: string;
+    onClick: () => void;
+  };
+}
 
+export const EmptyState = memo(function EmptyState({ title, description, icon, action }: EmptyStateProps) {
+  return (
+    <div className="flex flex-col items-center justify-center p-8 text-center bg-bg-surface border border-border-base border-dashed rounded-xl w-full h-full min-h-[200px]">
+      {icon && <div className="mb-4">{icon}</div>}
+      <h3 className="text-sm font-semibold text-text-base">{title}</h3>
+      {description && <p className="mt-1 text-xs text-text-muted max-w-sm">{description}</p>}
+      {action && (
+        <button
+          onClick={action.onClick}
+          className="mt-4 px-4 py-2 bg-primary-base hover:bg-primary-hover text-white rounded-md text-sm font-medium transition-colors shadow-sm"
+        >
+          {action.label}
+        </button>
+      )}
+    </div>
+  );
+});
