@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - [`5a13e03`](https://github.com/yashhh-23/chanakya/commit/5a13e03d2515a644b13a3f263c34dd644733a38e) FEATURE: Add dummy file to test GitHub bot
 
 ### Fixed
+- [`bc058e8`](https://github.com/yashhh-23/chanakya/commit/bc058e81055ffd64157e9d6bdbdd96d93911de32) BUG: Fortify transition logic against data corruption and metric leaks
 - [`3c2ce87`](https://github.com/yashhh-23/chanakya/commit/3c2ce87f7420da623bded9f19e86e6f5dd2301c5) BUG: Fix implicit any TS errors and install missing frontend dependencies
 - [`b8622d5`](https://github.com/yashhh-23/chanakya/commit/b8622d53d790ecee3f101c688b8662a1e5248bcb) UI: Add EmptyState component to fix build error
 
