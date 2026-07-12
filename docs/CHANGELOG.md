@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 
 ### Changed
+- [`9b5759c`](https://github.com/yashhh-23/chanakya/commit/9b5759c69ad3f5141e5f699918fba7a4d31a9f40) DOCS: UPDATE THE READ.me and
 - [`1f4b077`](https://github.com/yashhh-23/chanakya/commit/1f4b077cf3d95f6cbc3ff902c8d9cb2a4cb64b48) DOCS: Create comprehensive API Contract, Demo Workflow, and Integration Checklist document
 - DOCS: Create comprehensive API Contract, Demo Workflow, and Integration Checklist document
 - [`3d13775`](https://github.com/yashhh-23/chanakya/commit/3d137750e4eb8c0732f689b2982639fc38ed8b5c) DOCS: Remove emojis from README headings
