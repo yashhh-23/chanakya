@@ -5,12 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
+- FEATURE: Implement Prisma database seeding script with realistic fleet management datasets for all roles
 - [`63b3432`](https://github.com/yashhh-23/chanakya/commit/63b3432b320c9ae185a843935cb875da53fbdd2b) FEATURE: Add Next.js foundation, Prisma schema, and core API endpoints
 - [`5a13e03`](https://github.com/yashhh-23/chanakya/commit/5a13e03d2515a644b13a3f263c34dd644733a38e) FEATURE: Add dummy file to test GitHub bot
 
 ### Fixed
 
 ### Changed
+- DOCS: Create comprehensive API Contract, Demo Workflow, and Integration Checklist document
 - [`3d13775`](https://github.com/yashhh-23/chanakya/commit/3d137750e4eb8c0732f689b2982639fc38ed8b5c) DOCS: Remove emojis from README headings
 - [`8a581f9`](https://github.com/yashhh-23/chanakya/commit/8a581f9b59b839710b7c60ca7e38eef9a16960d1) DOCS: Add comprehensive detailed README for TransitOps project
 - [`f809598`](https://github.com/yashhh-23/chanakya/commit/f809598cbef2f3aa5b5d3091de8bf3651173dd8c) DOCS: Add API documentation for Vehicle, Driver, and Trip endpoints
