@@ -21,19 +21,25 @@ export const LiveBoard = memo(function LiveBoard() {
     return () => clearInterval(interval);
   }, [refreshData]);
 
-  const activeTrips = useMemo(() => trips.filter(t => t.status === 'Dispatched' || t.status === 'Completed'), [trips]);
+  const activeTrips = useMemo(() => {
+    return trips.filter(t => {
+      const s = (t.status || '').toUpperCase()
+      return s === 'DISPATCHED' || s === 'COMPLETED'
+    })
+  }, [trips]);
 
-  const getStatusBadge = (status: TripStatus) => {
-    const styles = {
-      Draft: 'bg-status-available/10 text-status-available border-status-available/20',
-      Dispatched: 'bg-status-dispatched/10 text-status-dispatched border-status-dispatched/20',
-      Completed: 'bg-status-inShop/10 text-status-inShop border-status-inShop/20',
-      Cancelled: 'bg-status-cancelled/10 text-status-cancelled border-status-cancelled/20',
+  const getStatusBadge = (status: string) => {
+    const s = (status || '').toUpperCase()
+    const styles: Record<string, string> = {
+      DRAFT: 'bg-status-available/10 text-status-available border-status-available/20',
+      DISPATCHED: 'bg-status-dispatched/10 text-status-dispatched border-status-dispatched/20',
+      COMPLETED: 'bg-status-inShop/10 text-status-inShop border-status-inShop/20',
+      CANCELLED: 'bg-status-cancelled/10 text-status-cancelled border-status-cancelled/20',
     };
     
     return (
-      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${styles[status] || styles.Draft}`}>
-        {status.toUpperCase()}
+      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${styles[s] || styles.DRAFT}`}>
+        {s}
       </span>
     );
   };

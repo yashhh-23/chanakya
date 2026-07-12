@@ -15,17 +15,18 @@ export const TripTable = memo(function TripTable({ onActionClick }: TripTablePro
   const [sortField, setSortField] = useState<'createdAt' | 'status' | 'destination'>('createdAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  const getStatusBadge = (status: TripStatus) => {
-    const styles = {
-      Draft: 'bg-status-available/10 text-status-available border-status-available/20',
-      Dispatched: 'bg-status-dispatched/10 text-status-dispatched border-status-dispatched/20',
-      Completed: 'bg-status-inShop/10 text-status-inShop border-status-inShop/20',
-      Cancelled: 'bg-status-cancelled/10 text-status-cancelled border-status-cancelled/20',
+  const getStatusBadge = (status: string) => {
+    const s = (status || '').toUpperCase()
+    const styles: Record<string, string> = {
+      DRAFT: 'bg-status-available/10 text-status-available border-status-available/20',
+      DISPATCHED: 'bg-status-dispatched/10 text-status-dispatched border-status-dispatched/20',
+      COMPLETED: 'bg-status-inShop/10 text-status-inShop border-status-inShop/20',
+      CANCELLED: 'bg-status-cancelled/10 text-status-cancelled border-status-cancelled/20',
     };
     
     return (
-      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${styles[status] || styles.Draft}`}>
-        {status.toUpperCase()}
+      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${styles[s] || styles.DRAFT}`}>
+        {s}
       </span>
     );
   };
@@ -36,7 +37,7 @@ export const TripTable = memo(function TripTable({ onActionClick }: TripTablePro
                             trip.source.toLowerCase().includes(searchTerm.toLowerCase()) ||
                             (trip.vehicle?.regNumber || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                             (trip.driver?.name || '').toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = statusFilter === 'All' || trip.status === statusFilter;
+      const matchesStatus = statusFilter === 'All' || (trip.status || '').toUpperCase() === statusFilter.toUpperCase();
       return matchesSearch && matchesStatus;
     }).sort((a, b) => {
       let comparison = 0;
@@ -167,7 +168,7 @@ export const TripTable = memo(function TripTable({ onActionClick }: TripTablePro
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
                     <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {trip.status === 'Draft' && (
+                      {(trip.status || '').toUpperCase() === 'DRAFT' && (
                         <>
                           <button 
                             onClick={() => onActionClick(trip.id, 'dispatch')}
@@ -185,7 +186,7 @@ export const TripTable = memo(function TripTable({ onActionClick }: TripTablePro
                           </button>
                         </>
                       )}
-                      {trip.status === 'Dispatched' && (
+                      {(trip.status || '').toUpperCase() === 'DISPATCHED' && (
                         <button 
                           onClick={() => onActionClick(trip.id, 'complete')}
                           className="p-1.5 bg-status-inShop/10 text-status-inShop rounded hover:bg-status-inShop/20 transition-colors"

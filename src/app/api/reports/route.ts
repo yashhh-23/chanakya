@@ -21,23 +21,27 @@ export async function GET() {
     // Compute Per-Vehicle Analytics
     const vehicleReports = vehicles.map((v: any) => {
       const vTrips = trips.filter((t: any) => t.vehicleId === v.id)
-      const vCompletedTrips = vTrips.filter((t: any) => t.status === 'Completed')
+      const vCompletedTrips = vTrips.filter((t: any) => (t.status || '').toUpperCase() === 'COMPLETED')
       const vExpenses = expenses.filter((e: any) => e.vehicleId === v.id)
       const vFuelLogs = fuelLogs.filter((f: any) => f.vehicleId === v.id)
 
-      const totalDistance = vTrips.reduce((sum: number, t: any) => sum + (t.plannedDistance || 0), 0)
+      // Fuel Efficiency (km/L): Σ Distance Completed / Σ Fuel Consumed
+      const totalDistance = vCompletedTrips.reduce((sum: number, t: any) => sum + (t.plannedDistance || 0), 0)
       const totalFuelConsumed = vFuelLogs.reduce((sum: number, f: any) => sum + (f.liters || 0), 0)
       const fuelEfficiency =
         totalFuelConsumed > 0 ? parseFloat((totalDistance / totalFuelConsumed).toFixed(2)) : 0
 
       const fuelCost = vExpenses
-        .filter((e: any) => e.category === 'Fuel')
+        .filter((e: any) => (e.category || '').toUpperCase() === 'FUEL')
         .reduce((sum: number, e: any) => sum + (e.amount || 0), 0)
       const maintenanceCost = vExpenses
-        .filter((e: any) => e.category === 'Maintenance')
+        .filter((e: any) => (e.category || '').toUpperCase() === 'MAINTENANCE')
         .reduce((sum: number, e: any) => sum + (e.amount || 0), 0)
       const otherCost = vExpenses
-        .filter((e: any) => e.category !== 'Fuel' && e.category !== 'Maintenance')
+        .filter((e: any) => {
+          const cat = (e.category || '').toUpperCase()
+          return cat !== 'FUEL' && cat !== 'MAINTENANCE'
+        })
         .reduce((sum: number, e: any) => sum + (e.amount || 0), 0)
       const totalOperationalCost = fuelCost + maintenanceCost + otherCost
 
@@ -56,6 +60,7 @@ export async function GET() {
         type: v.type,
         status: v.status,
         acquisitionCost: v.acquisitionCost,
+        odometer: v.odometer || 0,
         totalDistance,
         fuelConsumed: totalFuelConsumed,
         fuelEfficiency,
@@ -77,10 +82,14 @@ export async function GET() {
     const avgFuelEfficiency =
       totalFleetFuel > 0 ? parseFloat((totalFleetDistance / totalFleetFuel).toFixed(2)) : 0
 
-    const activeVehiclesCount = vehicles.filter(
-      (v: any) => v.status === 'On Trip' || v.status === 'Available'
-    ).length
-    const onTripVehiclesCount = vehicles.filter((v: any) => v.status === 'On Trip').length
+    const activeVehiclesCount = vehicles.filter((v: any) => {
+      const s = (v.status || '').toUpperCase().replace(/[\s_]+/g, ' ')
+      return s === 'ON TRIP' || s === 'AVAILABLE'
+    }).length
+    const onTripVehiclesCount = vehicles.filter((v: any) => {
+      const s = (v.status || '').toUpperCase().replace(/[\s_]+/g, ' ')
+      return s === 'ON TRIP'
+    }).length
     const fleetUtilization =
       vehicles.length > 0
         ? Math.round((onTripVehiclesCount / vehicles.length) * 100)
@@ -97,13 +106,16 @@ export async function GET() {
 
     // Cost Breakdown by category
     const totalFuelCost = expenses
-      .filter((e: any) => e.category === 'Fuel')
+      .filter((e: any) => (e.category || '').toUpperCase() === 'FUEL')
       .reduce((sum: number, e: any) => sum + e.amount, 0)
     const totalMaintenanceCost = expenses
-      .filter((e: any) => e.category === 'Maintenance')
+      .filter((e: any) => (e.category || '').toUpperCase() === 'MAINTENANCE')
       .reduce((sum: number, e: any) => sum + e.amount, 0)
     const totalOtherCost = expenses
-      .filter((e: any) => e.category !== 'Fuel' && e.category !== 'Maintenance')
+      .filter((e: any) => {
+        const cat = (e.category || '').toUpperCase()
+        return cat !== 'FUEL' && cat !== 'MAINTENANCE'
+      })
       .reduce((sum: number, e: any) => sum + e.amount, 0)
 
     const categoryBreakdown = [

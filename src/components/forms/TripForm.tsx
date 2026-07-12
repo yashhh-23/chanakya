@@ -57,8 +57,9 @@ export const TripForm: React.FC<TripFormProps> = ({
         const selectedVehicle = vehicles.find(v => v.id === selectedVehicleId);
         
         let capacityError = '';
-        if (selectedVehicle && cargoWeight && cargoWeight > selectedVehicle.maxCapacity) {
-          capacityError = `Cargo weight exceeds vehicle max capacity of ${selectedVehicle.maxCapacity}kg`;
+        if (selectedVehicle && cargoWeight && Number(cargoWeight) > selectedVehicle.maxCapacity) {
+          const exceeded = Number(cargoWeight) - selectedVehicle.maxCapacity;
+          capacityError = `Capacity exceeded by ${exceeded.toFixed(1)} kg — dispatch blocked`;
         }
 
         const isFormValid = isValid && !capacityError && availableVehicles.length > 0 && eligibleDrivers.length > 0;
