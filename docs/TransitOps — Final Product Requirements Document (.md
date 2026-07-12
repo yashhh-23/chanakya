@@ -16,8 +16,6 @@ Business drivers this solves: vehicle scheduling conflicts and low asset utiliza
 
 ## 2. Objective \& Success Criteria
 
-**Hackathon objective:** ship a working, demoable app that satisfies the Mandatory Deliverables (Section 10) end-to-end, using the example workflow (Section 9) as the acceptance test.
-
 **Success criteria for the demo:**
 
 - A judge can log in as each of the 4 roles and see role-scoped navigation exactly as specified.
@@ -27,8 +25,6 @@ Business drivers this solves: vehicle scheduling conflicts and low asset utiliza
 ***
 
 ## 3. Explicit Non-Goals (Scope Exclusions)
-
-Confirmed against the organizers' reference mockup (no map/live-tracking screen appears anywhere in the 6 reference screens or the nav):
 
 - Live GPS / map-based vehicle tracking, or real-time location telemetry of any kind.
 - Route optimization / turn-by-turn navigation.
@@ -482,3 +478,8 @@ COMMIT;
 ```
 
 ***
+
+## Person A - DBMS
+## Person B - Backend
+## Person C - Frontend
+## Person D - Backend
