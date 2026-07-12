@@ -1,4 +1,3 @@
-<img src="https://r2cdn.perplexity.ai/pplx-full-logo-primary-dark%402x.png" style="height:64px;margin-right:32px"/>
 
 # TransitOps — Final Product Requirements Document (PRD)
 
@@ -59,7 +58,6 @@ Treat the "Live Board" on the Trip Dispatcher screen as a **polling-based, auto-
 
 Roles and scoped access, taken directly from the reference mockup's login-screen footer:
 
-
 | Role | Scoped Access | Responsibilities |
 | :-- | :-- | :-- |
 | Fleet Manager | Fleet, Maintenance | Oversees fleet assets, maintenance, vehicle lifecycle |
@@ -84,7 +82,6 @@ Roles and scoped access, taken directly from the reference mockup's login-screen
 - FR-1.5: "Forgot password" link present (stub acceptable for demo).
 - FR-1.6: "Remember me" session persistence.
 
-
 ### 5.2 Dashboard (Screen 1)
 
 - FR-2.1: KPI cards — Active Vehicles, Available Vehicles, Vehicles in Maintenance, Active Trips, Pending Trips, Drivers on Duty, Fleet Utilization (%).
@@ -93,14 +90,12 @@ Roles and scoped access, taken directly from the reference mockup's login-screen
 - FR-2.4: Vehicle Status breakdown bar (Available / On Trip / In Shop / Retired) as proportional bars.
 - FR-2.5 *(stretch)*: Alert banner for vehicles in maintenance or drivers with licenses expiring within 30 days.
 
-
 ### 5.3 Vehicle Registry (Screen 2)
 
 - FR-3.1: Master list — Reg. No. (unique), Name/Model, Type, Capacity, Odometer, Acquisition Cost, Status.
 - FR-3.2: Add Vehicle action; registration number uniqueness enforced with inline error.
 - FR-3.3: Search by reg. no. or name; filter by Type and Status; sort by any column header.
 - FR-3.4: Retired/In Shop vehicles hidden from the Trip Dispatcher's vehicle picker.
-
 
 ### 5.4 Driver Management (Screen 3)
 
@@ -109,7 +104,6 @@ Roles and scoped access, taken directly from the reference mockup's login-screen
 - FR-4.3: Expired license flagged visually inline in the table (e.g., "03/2025 EXPIRED").
 - FR-4.4: Rule enforced: expired license or Suspended status blocks trip assignment.
 - FR-4.5: Search by name or license number; filter by Status; sort by any column header.
-
 
 ### 5.5 Trip Dispatcher (Screen 4)
 
@@ -120,7 +114,6 @@ Roles and scoped access, taken directly from the reference mockup's login-screen
 - FR-5.5: On Complete: capture odometer + fuel log → feeds Expenses → vehicle \& driver revert to Available.
 - FR-5.6: Trip table supports filter by Status and sort by created date and destination.
 
-
 ### 5.6 Maintenance (Screen 5)
 
 - FR-6.1: Log Service Record form — Vehicle, Service Type/Description, Cost, Date, Status.
@@ -130,7 +123,6 @@ Roles and scoped access, taken directly from the reference mockup's login-screen
 - FR-6.5: In Shop vehicles are removed from the dispatch pool.
 - FR-6.6: Maintenance table supports filter by Status and Vehicle; sort by date and cost.
 
-
 ### 5.7 Fuel \& Expenses (Screen 6)
 
 **Wireframe spec:** Two-panel page. Left panel = fuel log form + fuel log table. Right panel = expense form + expense table. Bottom = auto-computed cost summary card per vehicle. Use the same dark card + table pattern as Screens 2–5.
@@ -139,7 +131,6 @@ Roles and scoped access, taken directly from the reference mockup's login-screen
 - FR-7.2: Other expenses — category (Fuel / Toll / Maintenance / Other), cost, date, description; filter by category and vehicle.
 - FR-7.3: Auto-computed total operational cost (Fuel + Maintenance + Other) per vehicle shown as a summary row below each table.
 - FR-7.4: Sort both tables by date and cost.
-
 
 ### 5.8 Reports \& Analytics (Screen 7)
 
@@ -157,7 +148,6 @@ Roles and scoped access, taken directly from the reference mockup's login-screen
 ## 6. Input Validation Specification
 
 All validation errors must be shown **inline** below the relevant field, not as an alert/toast alone. The submit/dispatch button must be disabled while any required field is empty or invalid.
-
 
 | Field | Rule | Error Message |
 | :-- | :-- | :-- |
@@ -181,7 +171,6 @@ All validation errors must be shown **inline** below the relevant field, not as 
 | Maintenance Cost | Positive number > 0 | "Cost must be a positive number" |
 | Fuel Log — Liters | Positive number > 0 | "Liters must be a positive number" |
 | Fuel Log — Cost | Positive number > 0 | "Cost must be a positive number" |
-
 
 ***
 
@@ -220,13 +209,11 @@ All validation errors must be shown **inline** below the relevant field, not as 
 - **Expense** — id, vehicle_id (FK), category, amount, description, date
 - **Document** *(optional/stretch entity)* — id, title, file_url, expiry_date, vehicle_id, driver_id
 
-
 ### Relationships
 
 - Vehicle 1—N Trip, Vehicle 1—N MaintenanceLog, Vehicle 1—N FuelLog, Vehicle 1—N Expense
 - Driver 1—N Trip
 - User is standalone (auth/RBAC only)
-
 
 ### State Diagrams
 
@@ -276,7 +263,6 @@ All validation errors must be shown **inline** below the relevant field, not as 
 ## 11. Technical Stack
 
 > **Important:** The hackathon rules require a **local relational database (MySQL or PostgreSQL)**. SQLite is not acceptable. **PostgreSQL (local) via Prisma** is the mandatory default.
-
 
 | Layer | Choice | Why |
 | :-- | :-- | :-- |
@@ -339,7 +325,6 @@ transitops/
 └── README.md
 ```
 
-
 ***
 
 ## 12. Team Split, Timeline \& Git Workflow
@@ -349,7 +334,6 @@ transitops/
 - Every team member must push their own commits.
 - Use branch-per-person workflow.
 - Commit frequently and merge at sync points.
-
 
 ### Timeline
 
@@ -363,7 +347,6 @@ transitops/
 | 13:30–15:00 | Maintenance endpoints | Live Board + dispatch errors | Trip Dispatcher UI | CSV export + ROI formula |
 | 15:00–16:15 | Bug fixes | End-to-end trip cascade testing | Maintenance UI polish | Reports polish |
 | 16:15–17:00 | Integration + demo prep |  |  |  |
-
 
 ***
 
@@ -392,7 +375,6 @@ transitops/
 | Merge conflicts at end | Reserve final 45 minutes for integration |
 | Screens 6 \& 7 look inconsistent | Follow the wireframe specs in FR-7 and FR-8 |
 
-
 ***
 
 ## 15. Reporting Formulas
@@ -400,7 +382,6 @@ transitops/
 - **Fuel Efficiency (km/L):** `Σ Distance Completed / Σ Fuel Consumed`
 - **Total Operational Cost:** `Σ Fuel Cost + Σ Maintenance Cost + Σ Other Expense Cost`
 - **Vehicle ROI:** `(Revenue − (Fuel + Maintenance + Other Cost)) / Acquisition Cost`
-
 
 ### Reference CSV Export Snippet
 
@@ -439,7 +420,6 @@ export const generateFleetCSVExport = (data: VehicleReportItem[], filename: stri
 };
 ```
 
-
 ***
 
 ## 16. Stretch-Goal Reference Material
@@ -461,7 +441,6 @@ model Document {
   @@map("documents")
 }
 ```
-
 
 ### 16.2 Optional License-Expiry Email Worker
 
@@ -499,7 +478,6 @@ export const checkExpiringLicenses = async () => {
 };
 ```
 
-
 ### 16.3 Optional Concurrency Locking
 
 ```sql
@@ -509,7 +487,6 @@ SELECT id, status, "licenseExpiry" FROM drivers WHERE id = 'd-uuid-202' FOR UPDA
 INSERT INTO trips (...) VALUES (...);
 COMMIT;
 ```
-
 
 ***
 
@@ -530,4 +507,3 @@ COMMIT;
 **A.7 — Live Board polling:** Added 15-second polling to satisfy dynamic-data requirement.
 
 Would you like me to also convert this into a clean Markdown file format you can paste directly into your repo?
-
