@@ -13,7 +13,7 @@ Built as part of an 8-hour Hackathon, this project focuses on robust business lo
 * **Vehicle & Driver Registry:** Full CRUD operations for managing the fleet. Includes tracking max load capacity, safety scores, and odometer readings.
 * **Trip Dispatcher:** A robust wizard for drafting, dispatching, completing, and canceling trips. Automatically handles vehicle and driver status transitions (Available ↔ On Trip).
 * **Fuel & Maintenance Logging:** Automatic expense tracking. Completing a trip auto-generates fuel logs based on consumption, tying expenses directly to operational revenue.
-* **Analytics & KPIs:** Dashboard widgets for Fleet Utilization, Revenue per Km, and Maintenance costs. 
+* **Analytics & KPIs:** Dashboard widgets for Fleet Utilization, Revenue per Km, and Maintenance costs.
 
 ---
 
@@ -50,36 +50,42 @@ chanakya/
 ## Getting Started
 
 ### Prerequisites
+
 * Node.js (v18+)
 * PostgreSQL (Running locally or via Docker)
 
 ### Installation
 
 1. **Clone the repository:**
+
    ```bash
    git clone https://github.com/yashhh-23/chanakya.git
    cd chanakya
    ```
 
 2. **Install dependencies:**
+
    ```bash
    npm install
    ```
 
 3. **Configure Environment Variables:**
    Create a `.env` file in the root directory and add your PostgreSQL connection string:
+
    ```env
    DATABASE_URL="postgresql://user:password@localhost:5432/transitops?schema=public"
    ```
 
 4. **Initialize the Database:**
    Push the Prisma schema to your local database and generate the client:
+
    ```bash
    npx prisma db push
    npx prisma generate
    ```
 
 5. **Start the Development Server:**
+
    ```bash
    npm run dev
    ```
@@ -92,12 +98,13 @@ chanakya/
 ## Documentation
 
 For full details on the product requirements, database schema, and API endpoints, refer to the `/docs` folder:
-* [Product Requirements Document (PRD)](./docs/TransitOps%20—%20Final%20Product%20Requirements%20Document%20(.md)
+
+* [Product Requirements Document (PRD)] (./docs/TransitOps%20—%20Final%20Product%20Requirements%20Document%20(.md)
 * [Backend API Documentation](./docs/API_Documentation.md)
 * [Implementation Status](./docs/Implementation_Status.md)
 
 ---
 
-## AI Development Rules
+## Development Rules
 
 This repository enforces strict conventions for AI pair-programming via an automated bot. See `RULES.md` for the commit message formatting required to trigger the documentation bot.

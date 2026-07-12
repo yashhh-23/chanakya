@@ -14,7 +14,7 @@ Business drivers this solves: vehicle scheduling conflicts and low asset utiliza
 
 ***
 
-## 2. Objective \& Success Criteria
+## 2. Objective & Success Criteria
 
 **Success criteria for the demo:**
 
@@ -43,7 +43,7 @@ Treat the "Live Board" on the Trip Dispatcher screen as a **polling-based, auto-
 
 ***
 
-## 4. User Roles \& RBAC
+## 4. User Roles & RBAC
 
 Roles and scoped access, taken directly from the reference mockup's login-screen footer:
 
@@ -121,7 +121,7 @@ Roles and scoped access, taken directly from the reference mockup's login-screen
 - FR-7.3: Auto-computed total operational cost (Fuel + Maintenance + Other) per vehicle shown as a summary row below each table.
 - FR-7.4: Sort both tables by date and cost.
 
-### 5.8 Reports \& Analytics (Screen 7)
+### 5.8 Reports & Analytics (Screen 7)
 
 **Wireframe spec:** Top row = 4 metric summary cards (Avg Fuel Efficiency, Total Fleet Cost, Avg ROI, Fleet Utilization %). Below = tabbed view with tabs: "Fleet Report" (table + CSV export), "Fuel Efficiency" (bar chart per vehicle), "Operational Cost" (stacked bar by cost category), "Vehicle ROI" (bar chart). All charts use Recharts. Consistent dark theme.
 
@@ -316,7 +316,7 @@ transitops/
 
 ***
 
-## 12. Team Split, Timeline \& Git Workflow
+## 12. Team Split, Timeline & Git Workflow
 
 ### Git Workflow
 
@@ -351,7 +351,7 @@ transitops/
 
 ***
 
-## 14. Risks \& Mitigations
+## 14. Risks & Mitigations
 
 | Risk | Mitigation |
 | :-- | :-- |
@@ -480,6 +480,9 @@ COMMIT;
 ***
 
 ## Person A - DBMS
+
 ## Person B - Backend
+
 ## Person C - Frontend
+
 ## Person D - Backend
