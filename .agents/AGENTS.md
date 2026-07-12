@@ -1,1 +1,3 @@
 Please read and strictly follow the guidelines specified in the `RULES.md` file located at the root of the repository. This file contains commit message conventions, documentation update rules, and AI agent behavioral constraints for the TransitOps (Chanakya) project.
+
+- Do not create new branches for commits; commit directly to the main branch.

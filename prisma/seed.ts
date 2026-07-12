@@ -8,7 +8,6 @@ const PASSWORD_HASH = '$2a$10$Ep.x8m6X.o2XlJ44x34qyei6CebJ5Q7mC6FjJ7h4.g7c7zCj1Y
 async function main() {
   console.log('Clearing database...')
   // Order of deletion matters to avoid foreign key violations
-  await prisma.document.deleteMany({})
   await prisma.expense.deleteMany({})
   await prisma.fuelLog.deleteMany({})
   await prisma.maintenanceLog.deleteMany({})
@@ -23,7 +22,7 @@ async function main() {
       name: 'Frank Manager',
       email: 'manager@transitops.com',
       passwordHash: PASSWORD_HASH,
-      role: 'Fleet Manager',
+      role: 'FLEET_MANAGER',
     },
   })
 
@@ -32,7 +31,7 @@ async function main() {
       name: 'Dana Dispatcher',
       email: 'dispatcher@transitops.com',
       passwordHash: PASSWORD_HASH,
-      role: 'Dispatcher',
+      role: 'DISPATCHER',
     },
   })
 
@@ -41,7 +40,7 @@ async function main() {
       name: 'Sam Safety',
       email: 'safety@transitops.com',
       passwordHash: PASSWORD_HASH,
-      role: 'Safety Officer',
+      role: 'SAFETY_OFFICER',
     },
   })
 
@@ -50,7 +49,7 @@ async function main() {
       name: 'Fiona Analyst',
       email: 'finance@transitops.com',
       passwordHash: PASSWORD_HASH,
-      role: 'Financial Analyst',
+      role: 'FINANCIAL_ANALYST',
     },
   })
 
@@ -64,7 +63,7 @@ async function main() {
       odometer: 15000,
       acquisitionCost: 25000,
       region: 'East',
-      status: 'Available',
+      status: 'AVAILABLE',
     },
   })
 
@@ -77,7 +76,7 @@ async function main() {
       odometer: 85000,
       acquisitionCost: 75000,
       region: 'West',
-      status: 'On Trip',
+      status: 'ON_TRIP',
     },
   })
 
@@ -90,7 +89,7 @@ async function main() {
       odometer: 120000,
       acquisitionCost: 95000,
       region: 'North',
-      status: 'In Shop',
+      status: 'IN_SHOP',
     },
   })
 
@@ -103,7 +102,7 @@ async function main() {
       odometer: 300000,
       acquisitionCost: 22000,
       region: 'South',
-      status: 'Retired',
+      status: 'RETIRED',
     },
   })
 
@@ -116,7 +115,7 @@ async function main() {
       odometer: 12000,      // Demo Start Odometer: 12,000 km
       acquisitionCost: 24000,
       region: 'East',
-      status: 'Available',
+      status: 'AVAILABLE',
     },
   })
 
@@ -130,7 +129,7 @@ async function main() {
       contactNumber: '555-0101',
       safetyScore: 98,
       tripCompletionPct: 95,
-      status: 'Available',
+      status: 'AVAILABLE',
     },
   })
 
@@ -143,7 +142,7 @@ async function main() {
       contactNumber: '555-0102',
       safetyScore: 92,
       tripCompletionPct: 90,
-      status: 'On Trip',
+      status: 'ON_TRIP',
     },
   })
 
@@ -156,7 +155,7 @@ async function main() {
       contactNumber: '555-0103',
       safetyScore: 80,
       tripCompletionPct: 85,
-      status: 'Available',
+      status: 'AVAILABLE',
     },
   })
 
@@ -169,7 +168,7 @@ async function main() {
       contactNumber: '555-0104',
       safetyScore: 45,
       tripCompletionPct: 70,
-      status: 'Suspended', // Suspended status
+      status: 'SUSPENDED', // Suspended status
     },
   })
 
@@ -182,7 +181,7 @@ async function main() {
       contactNumber: '555-0105',
       safetyScore: 95,
       tripCompletionPct: 92,
-      status: 'Off Duty',
+      status: 'OFF_DUTY',
     },
   })
 
@@ -196,7 +195,7 @@ async function main() {
       driverId: alex.id,
       cargoWeight: 450, // Valid (450 <= 500)
       plannedDistance: 240,
-      status: 'Draft',
+      status: 'DRAFT',
     },
   })
 
@@ -209,7 +208,7 @@ async function main() {
       driverId: bob.id,
       cargoWeight: 4000,
       plannedDistance: 500,
-      status: 'Dispatched',
+      status: 'DISPATCHED',
       startOdometer: 84500,
       revenue: 2500,
     },
@@ -224,7 +223,7 @@ async function main() {
       driverId: alex.id,
       cargoWeight: 300,
       plannedDistance: 100,
-      status: 'Completed',
+      status: 'COMPLETED',
       startOdometer: 14900,
       endOdometer: 15000,
       fuelConsumed: 15, // 100km / 15L = 6.67 km/L
@@ -293,7 +292,7 @@ async function main() {
   await prisma.expense.create({
     data: {
       vehicleId: van01.id,
-      category: 'Maintenance',
+      category: 'MAINTENANCE',
       amount: 80.00,
       description: 'Oil Change',
       date: new Date('2026-06-15T10:00:00Z'),
@@ -304,7 +303,7 @@ async function main() {
   await prisma.expense.create({
     data: {
       vehicleId: van01.id,
-      category: 'Fuel',
+      category: 'FUEL',
       amount: 22.50,
       description: 'Fuel Refill (Trip 3)',
       date: new Date('2026-07-01T08:00:00Z'),
@@ -315,7 +314,7 @@ async function main() {
   await prisma.expense.create({
     data: {
       vehicleId: van01.id,
-      category: 'Fuel',
+      category: 'FUEL',
       amount: 30.00,
       description: 'Fuel Refill (Regular)',
       date: new Date('2026-07-05T09:00:00Z'),
@@ -326,7 +325,7 @@ async function main() {
   await prisma.expense.create({
     data: {
       vehicleId: trk02.id,
-      category: 'Fuel',
+      category: 'FUEL',
       amount: 180.00,
       description: 'Fuel Refill',
       date: new Date('2026-07-08T12:00:00Z'),
@@ -337,7 +336,7 @@ async function main() {
   await prisma.expense.create({
     data: {
       vehicleId: trk02.id,
-      category: 'Other',
+      category: 'TOLL',
       amount: 50.00,
       description: 'Highway Tolls',
       date: new Date('2026-07-09T10:00:00Z'),
