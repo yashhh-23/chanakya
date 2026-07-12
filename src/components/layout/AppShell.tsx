@@ -303,13 +303,14 @@ export const AppShell = memo(function AppShell({
                 <select
                   value={user.role}
                   onChange={handleRoleChange}
-                  className="bg-bg-base border border-border-base rounded-md text-[11px] font-bold px-2 py-1 outline-none text-text-base focus-visible:ring-1 focus-visible:ring-status-dispatched cursor-pointer"
+                  className="rounded-md text-[11px] font-bold px-2 py-1 outline-none border cursor-pointer focus-visible:ring-1 focus-visible:ring-[var(--status-dispatched)]"
+                  style={{ backgroundColor: 'var(--input-bg)', color: 'var(--input-text)', borderColor: 'var(--input-border)', colorScheme: 'inherit' }}
                   title="Switch Mock Role"
                 >
-                  <option value="FLEET_MANAGER">Fleet Manager</option>
-                  <option value="DRIVER">Driver</option>
-                  <option value="SAFETY_OFFICER">Safety Officer</option>
-                  <option value="FINANCIAL_ANALYST">Financial Analyst</option>
+                  <option value="FLEET_MANAGER" style={{ backgroundColor: 'var(--input-bg)', color: 'var(--input-text)' }}>Fleet Manager</option>
+                  <option value="DRIVER" style={{ backgroundColor: 'var(--input-bg)', color: 'var(--input-text)' }}>Driver</option>
+                  <option value="SAFETY_OFFICER" style={{ backgroundColor: 'var(--input-bg)', color: 'var(--input-text)' }}>Safety Officer</option>
+                  <option value="FINANCIAL_ANALYST" style={{ backgroundColor: 'var(--input-bg)', color: 'var(--input-text)' }}>Financial Analyst</option>
                 </select>
               </div>
             )}
@@ -322,7 +323,8 @@ export const AppShell = memo(function AppShell({
               <input
                 type="text"
                 placeholder="Global search..."
-                className="w-44 lg:w-56 h-8 pl-8 pr-3 text-xs bg-bg-base border border-border-base rounded-md outline-none focus-visible:ring-1 focus-visible:ring-status-dispatched text-text-base placeholder:text-text-muted/60"
+                className="w-44 lg:w-56 h-8 pl-8 pr-3 text-xs border rounded-md outline-none focus-visible:ring-1 focus-visible:ring-[var(--status-dispatched)]"
+                style={{ backgroundColor: 'var(--input-bg)', color: 'var(--input-text)', borderColor: 'var(--input-border)' }}
               />
             </div>
 
@@ -419,12 +421,13 @@ export const AppShell = memo(function AppShell({
                           <select
                             value={user.role}
                             onChange={handleRoleChange}
-                            className="w-full bg-bg-base border border-border-base rounded-md text-[11px] font-bold px-1.5 py-1 outline-none text-text-base cursor-pointer"
+                            className="w-full rounded-md text-[11px] font-bold px-1.5 py-1 outline-none border cursor-pointer"
+                            style={{ backgroundColor: 'var(--input-bg)', color: 'var(--input-text)', borderColor: 'var(--input-border)', colorScheme: 'inherit' }}
                           >
-                            <option value="FLEET_MANAGER">Fleet Manager</option>
-                            <option value="DRIVER">Driver</option>
-                            <option value="SAFETY_OFFICER">Safety Officer</option>
-                            <option value="FINANCIAL_ANALYST">Financial Analyst</option>
+                            <option value="FLEET_MANAGER" style={{ backgroundColor: 'var(--input-bg)', color: 'var(--input-text)' }}>Fleet Manager</option>
+                            <option value="DRIVER" style={{ backgroundColor: 'var(--input-bg)', color: 'var(--input-text)' }}>Driver</option>
+                            <option value="SAFETY_OFFICER" style={{ backgroundColor: 'var(--input-bg)', color: 'var(--input-text)' }}>Safety Officer</option>
+                            <option value="FINANCIAL_ANALYST" style={{ backgroundColor: 'var(--input-bg)', color: 'var(--input-text)' }}>Financial Analyst</option>
                           </select>
                         </div>
 

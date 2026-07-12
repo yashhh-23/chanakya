@@ -124,7 +124,7 @@ export const AnalyticsPage = memo(function AnalyticsPage() {
       'Vehicle Type',
       'Current Odometer (km)',
       'Total Operational Cost',
-      'Calculated ROI (%)',
+      'Calculated ROI',
       'Current Status',
     ];
 
@@ -137,7 +137,7 @@ export const AnalyticsPage = memo(function AnalyticsPage() {
           `"${row.type}"`,
           row.odometer,
           row.operationalCost.toFixed(2),
-          row.roi.toFixed(2),
+          (row.roi / 100).toFixed(4),
           `"${row.status}"`,
         ].join(',')
       ),
@@ -374,7 +374,7 @@ export const AnalyticsPage = memo(function AnalyticsPage() {
                       <XAxis dataKey="regNumber" stroke="#94a3b8" fontSize={10} tickLine={false} />
                       <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} />
                       <Tooltip
-                        contentStyle={{ backgroundColor: '#1e293b', borderColor: '#475569', borderRadius: '8px', color: '#f8fafc', fontSize: '11px' }}
+                        contentStyle={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)', borderRadius: '8px', color: 'var(--text)', fontSize: '11px' }}
                       />
                       <Bar dataKey="fuelEfficiency" name="Efficiency (km/L)" fill="#10b981" radius={[4, 4, 0, 0]} />
                     </BarChart>
@@ -404,7 +404,7 @@ export const AnalyticsPage = memo(function AnalyticsPage() {
                       <XAxis dataKey="regNumber" stroke="#94a3b8" fontSize={10} tickLine={false} />
                       <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} />
                       <Tooltip
-                        contentStyle={{ backgroundColor: '#1e293b', borderColor: '#475569', borderRadius: '8px', color: '#f8fafc', fontSize: '11px' }}
+                        contentStyle={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)', borderRadius: '8px', color: 'var(--text)', fontSize: '11px' }}
                       />
                       <Legend wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }} />
                       <Bar dataKey="fuelCost" name="Fuel Cost" stackId="costs" fill="#10b981" />
@@ -437,7 +437,7 @@ export const AnalyticsPage = memo(function AnalyticsPage() {
                       <XAxis dataKey="regNumber" stroke="#94a3b8" fontSize={10} tickLine={false} />
                       <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} />
                       <Tooltip
-                        contentStyle={{ backgroundColor: '#1e293b', borderColor: '#475569', borderRadius: '8px', color: '#f8fafc', fontSize: '11px' }}
+                        contentStyle={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)', borderRadius: '8px', color: 'var(--text)', fontSize: '11px' }}
                       />
                       <Bar dataKey="roi" name="ROI (%)" fill="#6366f1" radius={[4, 4, 0, 0]} />
                     </BarChart>

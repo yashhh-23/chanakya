@@ -18,14 +18,14 @@ export const TripTable = memo(function TripTable({ onActionClick }: TripTablePro
   const getStatusBadge = (status: string) => {
     const s = (status || '').toUpperCase()
     const styles: Record<string, string> = {
-      DRAFT: 'bg-status-available/10 text-status-available border-status-available/20',
-      DISPATCHED: 'bg-status-dispatched/10 text-status-dispatched border-status-dispatched/20',
-      COMPLETED: 'bg-status-inShop/10 text-status-inShop border-status-inShop/20',
-      CANCELLED: 'bg-status-cancelled/10 text-status-cancelled border-status-cancelled/20',
+      DRAFT: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20',
+      DISPATCHED: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+      COMPLETED: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+      CANCELLED: 'bg-red-500/10 text-red-400 border-red-500/20',
     };
     
     return (
-      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${styles[s] || styles.DRAFT}`}>
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${styles[s] || styles.DRAFT}`}>
         {s}
       </span>
     );
@@ -84,7 +84,7 @@ export const TripTable = memo(function TripTable({ onActionClick }: TripTablePro
           </div>
           <input
             type="text"
-            className="block w-full pl-10 pr-3 py-2 border border-border-base rounded-lg text-sm bg-bg-base text-text-base placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-primary-base focus:border-primary-base transition-colors"
+            className="block w-full pl-10 pr-3 py-2 border border-[var(--input-border)] rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[var(--status-dispatched)] transition-colors"
             placeholder="Search destination, vehicle, driver..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -92,18 +92,19 @@ export const TripTable = memo(function TripTable({ onActionClick }: TripTablePro
         </div>
         
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2 bg-bg-base border border-border-base rounded-lg px-3 py-1.5">
+          <div className="flex items-center gap-2 border border-[var(--input-border)] rounded-lg px-3 py-1.5" style={{ backgroundColor: 'var(--input-bg)' }}>
             <Filter size={16} className="text-text-muted" />
             <select 
-              className="bg-transparent text-sm text-text-base focus:outline-none cursor-pointer"
+              className="text-sm focus:outline-none cursor-pointer border-none outline-none"
+              style={{ backgroundColor: 'var(--input-bg)', color: 'var(--input-text)' }}
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as any)}
             >
-              <option value="All">All Statuses</option>
-              <option value="Draft">Draft</option>
-              <option value="Dispatched">Dispatched</option>
-              <option value="Completed">Completed</option>
-              <option value="Cancelled">Cancelled</option>
+              <option value="All" style={{ backgroundColor: 'var(--input-bg)', color: 'var(--input-text)' }}>All Statuses</option>
+              <option value="Draft" style={{ backgroundColor: 'var(--input-bg)', color: 'var(--input-text)' }}>Draft</option>
+              <option value="Dispatched" style={{ backgroundColor: 'var(--input-bg)', color: 'var(--input-text)' }}>Dispatched</option>
+              <option value="Completed" style={{ backgroundColor: 'var(--input-bg)', color: 'var(--input-text)' }}>Completed</option>
+              <option value="Cancelled" style={{ backgroundColor: 'var(--input-bg)', color: 'var(--input-text)' }}>Cancelled</option>
             </select>
           </div>
         </div>
@@ -189,7 +190,7 @@ export const TripTable = memo(function TripTable({ onActionClick }: TripTablePro
                       {(trip.status || '').toUpperCase() === 'DISPATCHED' && (
                         <button 
                           onClick={() => onActionClick(trip.id, 'complete')}
-                          className="p-1.5 bg-status-inShop/10 text-status-inShop rounded hover:bg-status-inShop/20 transition-colors"
+                          className="p-1.5 bg-emerald-500/10 text-emerald-400 rounded hover:bg-emerald-500/20 transition-colors"
                           title="Complete Trip"
                         >
                           <CheckCircle size={16} />

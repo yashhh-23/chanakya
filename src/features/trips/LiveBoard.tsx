@@ -31,14 +31,14 @@ export const LiveBoard = memo(function LiveBoard() {
   const getStatusBadge = (status: string) => {
     const s = (status || '').toUpperCase()
     const styles: Record<string, string> = {
-      DRAFT: 'bg-status-available/10 text-status-available border-status-available/20',
-      DISPATCHED: 'bg-status-dispatched/10 text-status-dispatched border-status-dispatched/20',
-      COMPLETED: 'bg-status-inShop/10 text-status-inShop border-status-inShop/20',
-      CANCELLED: 'bg-status-cancelled/10 text-status-cancelled border-status-cancelled/20',
+      DRAFT: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20',
+      DISPATCHED: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+      COMPLETED: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+      CANCELLED: 'bg-red-500/10 text-red-400 border-red-500/20',
     };
     
     return (
-      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${styles[s] || styles.DRAFT}`}>
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${styles[s] || styles.DRAFT}`}>
         {s}
       </span>
     );

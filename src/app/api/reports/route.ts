@@ -27,7 +27,7 @@ export async function GET() {
 
       // Fuel Efficiency (km/L): Σ Distance Completed / Σ Fuel Consumed
       const totalDistance = vCompletedTrips.reduce((sum: number, t: any) => sum + (t.plannedDistance || 0), 0)
-      const totalFuelConsumed = vFuelLogs.reduce((sum: number, f: any) => sum + (f.liters || 0), 0)
+      const totalFuelConsumed = vCompletedTrips.reduce((sum: number, t: any) => sum + (t.fuelConsumed || 0), 0)
       const fuelEfficiency =
         totalFuelConsumed > 0 ? parseFloat((totalDistance / totalFuelConsumed).toFixed(2)) : 0
 
@@ -47,10 +47,10 @@ export async function GET() {
 
       const revenue = vCompletedTrips.reduce((sum: number, t: any) => sum + (t.revenue || 0), 0)
 
-      // ROI = ((Revenue - Operational Cost) / Acquisition Cost) * 100
+      // ROI = (Revenue - Operational Cost) / Acquisition Cost (as decimal ratio)
       const acquisitionCost = v.acquisitionCost || 1
       const roi = parseFloat(
-        (((revenue - totalOperationalCost) / acquisitionCost) * 100).toFixed(2)
+        ((revenue - totalOperationalCost) / acquisitionCost).toFixed(4)
       )
 
       return {
@@ -82,25 +82,30 @@ export async function GET() {
     const avgFuelEfficiency =
       totalFleetFuel > 0 ? parseFloat((totalFleetDistance / totalFleetFuel).toFixed(2)) : 0
 
-    const activeVehiclesCount = vehicles.filter((v: any) => {
-      const s = (v.status || '').toUpperCase().replace(/[\s_]+/g, ' ')
-      return s === 'ON TRIP' || s === 'AVAILABLE'
-    }).length
-    const onTripVehiclesCount = vehicles.filter((v: any) => {
+    const activeVehicles = vehicles.filter((v: any) => {
       const s = (v.status || '').toUpperCase().replace(/[\s_]+/g, ' ')
       return s === 'ON TRIP'
     }).length
-    const fleetUtilization =
-      vehicles.length > 0
-        ? Math.round((onTripVehiclesCount / vehicles.length) * 100)
-        : 0
+    const availableVehicles = vehicles.filter((v: any) => {
+      const s = (v.status || '').toUpperCase().replace(/[\s_]+/g, ' ')
+      return s === 'AVAILABLE'
+    }).length
+    const maintenanceVehicles = vehicles.filter((v: any) => {
+      const s = (v.status || '').toUpperCase().replace(/[\s_]+/g, ' ')
+      return s === 'IN SHOP'
+    }).length
+
+    const operationalCount = activeVehicles + availableVehicles + maintenanceVehicles
+    const fleetUtilization = operationalCount > 0
+      ? Math.round((activeVehicles / operationalCount) * 1000) / 10
+      : 0
 
     const avgRoi =
       vehicleReports.length > 0
         ? parseFloat(
             (
               vehicleReports.reduce((sum: number, v: any) => sum + v.roi, 0) / vehicleReports.length
-            ).toFixed(2)
+            ).toFixed(4)
           )
         : 0
 

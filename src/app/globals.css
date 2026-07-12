@@ -5,7 +5,6 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
   --font-display: "Space Grotesk", sans-serif;
-
   --color-bg-base: var(--background);
   --color-bg-surface: var(--surface);
   --color-bg-card: var(--card);
@@ -20,24 +19,32 @@
   --color-muted-foreground: var(--muted-foreground);
   --color-text-base: var(--text);
   --color-text-muted: var(--text-muted);
+  --color-status-available: var(--status-available);
+  --color-status-ontrip: var(--status-ontrip);
+  --color-status-dispatched: var(--status-dispatched);
+  --color-status-inshop: var(--status-inshop);
 }
 
 :root {
   color-scheme: light;
-  --background: #f8fafc;
+  --background: #f1f5f9;
   --surface: #ffffff;
   --card: #ffffff;
   --sidebar: #0f172a;
   --sidebar-text: #f8fafc;
-  --border: #e2e8f0;
+  --border: #cbd5e1;
   --primary: #0f172a;
   --primary-foreground: #ffffff;
-  --secondary: #64748b;
+  --secondary: #475569;
   --secondary-foreground: #ffffff;
-  --muted: #f1f5f9;
+  --muted: #e2e8f0;
   --muted-foreground: #64748b;
   --text: #0f172a;
   --text-muted: #64748b;
+  --input-bg: #ffffff;
+  --input-text: #0f172a;
+  --input-placeholder: #94a3b8;
+  --input-border: #cbd5e1;
   --status-available: #10b981;
   --status-ontrip: #f59e0b;
   --status-dispatched: #f97316;
@@ -46,35 +53,43 @@
   --status-cancelled: #ef4444;
   --status-retired: #6b7280;
   --status-draft: #6b7280;
+  --status-completed: #10b981;
 }
 
 .dark {
   color-scheme: dark;
   --background: #09090b;
-  --surface: #09090b;
-  --card: #09090b;
+  --surface: #18181b;
+  --card: #1c1c1f;
   --sidebar: #09090b;
   --sidebar-text: #fafafa;
-  --border: #27272a;
-  --primary: #ffffff;
+  --border: #3f3f46;
+  --primary: #f4f4f5;
   --primary-foreground: #09090b;
   --secondary: #a1a1aa;
   --secondary-foreground: #09090b;
-  --muted: #18181b;
+  --muted: #27272a;
   --muted-foreground: #a1a1aa;
-  --text: #fafafa;
+  --text: #f4f4f5;
   --text-muted: #a1a1aa;
-  --status-available: #10b981;
-  --status-ontrip: #f59e0b;
-  --status-dispatched: #f97316;
-  --status-inshop: #ef4444;
-  --status-suspended: #ef4444;
-  --status-cancelled: #ef4444;
-  --status-retired: #6b7280;
-  --status-draft: #6b7280;
+  --input-bg: #27272a;
+  --input-text: #f4f4f5;
+  --input-placeholder: #71717a;
+  --input-border: #3f3f46;
+  --status-available: #34d399;
+  --status-ontrip: #fbbf24;
+  --status-dispatched: #fb923c;
+  --status-inshop: #f87171;
+  --status-suspended: #f87171;
+  --status-cancelled: #f87171;
+  --status-retired: #9ca3af;
+  --status-draft: #9ca3af;
+  --status-completed: #34d399;
 }
 
-* {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
@@ -94,9 +109,54 @@ body {
   background-color: var(--background);
   color: var(--text);
   font-family: var(--font-sans);
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
+/* Native form controls: respect theme ---- */
+input[type="text"],
+input[type="number"],
+input[type="email"],
+input[type="password"],
+input[type="search"],
+input[type="date"],
+input[type="datetime-local"],
+input[type="time"],
+textarea {
+  background-color: var(--input-bg) !important;
+  color: var(--input-text) !important;
+  border-color: var(--input-border);
+  color-scheme: inherit;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--input-placeholder) !important;
+  opacity: 1;
+}
+
+/* Native <select> — option bg must be explicit; CSS vars unsupported in <option> natively */
+select {
+  background-color: var(--input-bg) !important;
+  color: var(--input-text) !important;
+  border-color: var(--input-border);
+  color-scheme: inherit;
+}
+
+/* <option> style — browser renders this, so we use CSS var which works via color-scheme */
+select option {
+  background-color: var(--input-bg) !important;
+  color: var(--input-text) !important;
+}
+
+/* Date/time picker popup calendar */
+input[type="date"],
+input[type="datetime-local"],
+input[type="time"] {
+  color-scheme: inherit;
+}
+
+
+/* ---- Cursors ---- */
 button,
 [role="button"],
 [role="tab"],
@@ -108,10 +168,54 @@ button:disabled,
 [role="button"][aria-disabled="true"],
 select:disabled {
   cursor: not-allowed;
+  opacity: 0.5;
 }
 
+/* ---- Scrollbars ---- */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background-color: var(--border); border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background-color: var(--muted-foreground); }
+
+/* ---- Recharts tooltip ---- */
 .recharts-default-tooltip {
   background-color: var(--surface) !important;
   border-color: var(--border) !important;
   color: var(--text) !important;
 }
+/* Custom Premium Scrollbar */
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track,
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb,
+*::-webkit-scrollbar-thumb {
+  background-color: var(--secondary);
+  border-radius: 10px;
+}
+
+html::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover,
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--primary);
+}
+
+/* Firefox Support */
+html, body, * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--secondary) transparent;
+}
+
+.recharts-tooltip-label { color: var(--text) !important; }
+.recharts-tooltip-item { color: var(--text-muted) !important; }
+
