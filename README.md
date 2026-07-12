@@ -108,6 +108,13 @@ chanakya/
 7. **Open the App:**
    Navigate to [http://localhost:3000](http://localhost:3000) in your browser.
 
+8. **Log In (Demo Credentials):**
+   The application uses Role-Based Access Control (RBAC). Use any of the following accounts (all passwords are `password123`):
+   * **Fleet Manager**: `manager@transitops.com` (Full Access)
+   * **Financial Analyst**: `finance@transitops.com` (Reports & Analytics)
+   * **Safety Officer**: `safety@transitops.com` (Safety & Maintenance)
+   * **Driver/Dispatcher**: `dispatcher@transitops.com` (Limited to Dispatching)
+
 ---
 
 ## Documentation
