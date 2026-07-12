@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
+- [`921900a`](https://github.com/yashhh-23/chanakya/commit/921900a5650e0301e553ed398e66edaf2b6353da) FEATURE: integrate phase 1 TransitOps frontend with Next app
 - [`d95b66e`](https://github.com/yashhh-23/chanakya/commit/d95b66e1fc95f6f1f5bd4dd1ab48cb8a5fadea41) FEATURE: Implement Phase 2 Dashboard KPI telemetry, Fuel & Expenses two-panel interactive screens, and API endpoints
 - FEATURE: Implement Phase 2 Dashboard KPI cards & API endpoints, Fuel & Expenses two-panel interactive page, and role-aware navigation
 - [`57a72c7`](https://github.com/yashhh-23/chanakya/commit/57a72c7463801e5d084a9efe5af9a48c2de494c0) FEATURE: Implement Phase 2 Vehicle & Driver screens and merge local changes
@@ -20,6 +21,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - [`b8622d5`](https://github.com/yashhh-23/chanakya/commit/b8622d53d790ecee3f101c688b8662a1e5248bcb) UI: Add EmptyState component to fix build error
 
 ### Changed
+- [`2bf8e23`](https://github.com/yashhh-23/chanakya/commit/2bf8e235daa0765a1a37887f2d20eda26ceb0eee) DOCS: automated changelog/status update for 921900a5650e0301e553ed398e66edaf2b6353da
+- [`0d09284`](https://github.com/yashhh-23/chanakya/commit/0d09284c1eddbdefb5243af4b2822e62feca7dcb) DOCS: automated changelog/status update for 7ff25da14f3dcad56a1683c0b32c67595e739491
 - [`9b5759c`](https://github.com/yashhh-23/chanakya/commit/9b5759c69ad3f5141e5f699918fba7a4d31a9f40) DOCS: UPDATE THE READ.me and
 - [`1f4b077`](https://github.com/yashhh-23/chanakya/commit/1f4b077cf3d95f6cbc3ff902c8d9cb2a4cb64b48) DOCS: Create comprehensive API Contract, Demo Workflow, and Integration Checklist document
 - DOCS: Create comprehensive API Contract, Demo Workflow, and Integration Checklist document
