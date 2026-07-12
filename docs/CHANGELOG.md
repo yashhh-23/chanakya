@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
+- [`d95b66e`](https://github.com/yashhh-23/chanakya/commit/d95b66e1fc95f6f1f5bd4dd1ab48cb8a5fadea41) FEATURE: Implement Phase 2 Dashboard KPI telemetry, Fuel & Expenses two-panel interactive screens, and API endpoints
 - FEATURE: Implement Phase 2 Dashboard KPI cards & API endpoints, Fuel & Expenses two-panel interactive page, and role-aware navigation
 - [`57a72c7`](https://github.com/yashhh-23/chanakya/commit/57a72c7463801e5d084a9efe5af9a48c2de494c0) FEATURE: Implement Phase 2 Vehicle & Driver screens and merge local changes
 - [`5215cc3`](https://github.com/yashhh-23/chanakya/commit/5215cc32175307a84e7f31eb196c10cae69e843f) FEATURE: Implement Phase 2 Dashboard KPI telemetry, Fuel & Expenses two-panel interactive screens, and API endpoints
