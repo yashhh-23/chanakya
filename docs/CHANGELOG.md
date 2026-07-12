@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - [`5a13e03`](https://github.com/yashhh-23/chanakya/commit/5a13e03d2515a644b13a3f263c34dd644733a38e) FEATURE: Add dummy file to test GitHub bot
 
 ### Fixed
+- [`b8622d5`](https://github.com/yashhh-23/chanakya/commit/b8622d53d790ecee3f101c688b8662a1e5248bcb) UI: Add EmptyState component to fix build error
 
 ### Changed
 - [`9b5759c`](https://github.com/yashhh-23/chanakya/commit/9b5759c69ad3f5141e5f699918fba7a4d31a9f40) DOCS: UPDATE THE READ.me and
