@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
+- [`921900a`](https://github.com/yashhh-23/chanakya/commit/921900a5650e0301e553ed398e66edaf2b6353da) FEATURE: integrate phase 1 TransitOps frontend with Next app
 - [`c0dad24`](https://github.com/yashhh-23/chanakya/commit/c0dad24990b53beb3dd33a6eee03f4e1dc6cc701) FEATURE: Add realistic Prisma database seeding script and configure tsx runner
 - FEATURE: Implement Prisma database seeding script with realistic fleet management datasets for all roles
 - [`63b3432`](https://github.com/yashhh-23/chanakya/commit/63b3432b320c9ae185a843935cb875da53fbdd2b) FEATURE: Add Next.js foundation, Prisma schema, and core API endpoints
