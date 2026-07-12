@@ -74,6 +74,8 @@ export const driverSchema = z.object({
   status: z
     .enum(['AVAILABLE', 'ON_TRIP', 'SUSPENDED'])
     .default('AVAILABLE'),
+  safetyScore: z.coerce.number().min(0).max(100).optional(),
+  tripCompletionPct: z.coerce.number().min(0).max(100).optional(),
 });
 
 export type DriverFormValues = z.infer<typeof driverSchema>;
