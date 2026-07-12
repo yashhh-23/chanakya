@@ -1,4 +1,4 @@
-# 🚛 TransitOps (Chanakya)
+# TransitOps (Chanakya)
 
 **TransitOps** is an internal fleet and logistics management dashboard designed for an enterprise logistics company operating over 500 heavy vehicles. It serves as the central command center for dispatchers, fleet managers, and executives to track vehicles, manage drivers, monitor live trips, and analyze operational KPIs in real-time.
 
@@ -6,7 +6,7 @@ Built as part of an 8-hour Hackathon, this project focuses on robust business lo
 
 ---
 
-## 🌟 Key Features
+## Key Features
 
 * **Real-time Live Board:** A 15-second auto-refreshing dashboard showing all currently active deliveries, their assigned drivers, and dispatch status.
 * **Strict State Machine:** Centralized business logic ensures that drivers with expired licenses cannot be assigned, and vehicles that are "In Shop" or "Retired" cannot be dispatched.
@@ -17,7 +17,7 @@ Built as part of an 8-hour Hackathon, this project focuses on robust business lo
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 * **Frontend:** Next.js (App Router), React, Tailwind CSS, Shadcn/UI (planned)
 * **Backend:** Next.js Route Handlers (API), Node.js
@@ -26,7 +26,7 @@ Built as part of an 8-hour Hackathon, this project focuses on robust business lo
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```text
 chanakya/
@@ -47,7 +47,7 @@ chanakya/
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 * Node.js (v18+)
@@ -89,7 +89,7 @@ chanakya/
 
 ---
 
-## 📜 Documentation
+## Documentation
 
 For full details on the product requirements, database schema, and API endpoints, refer to the `/docs` folder:
 * [Product Requirements Document (PRD)](./docs/TransitOps%20—%20Final%20Product%20Requirements%20Document%20(.md)
@@ -98,6 +98,6 @@ For full details on the product requirements, database schema, and API endpoints
 
 ---
 
-## 🤖 AI Development Rules
+## AI Development Rules
 
 This repository enforces strict conventions for AI pair-programming via an automated bot. See `RULES.md` for the commit message formatting required to trigger the documentation bot.
