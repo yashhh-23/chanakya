@@ -13,9 +13,9 @@ import {VehicleRegistryPage} from './features/fleet/VehicleRegistryPage';
 import {DriverDirectoryPage} from './features/drivers/DriverDirectoryPage';
 import {AuthPage} from './features/auth/AuthPage';
 
-const AppContent = memo(function AppContent() {
+const AppContent = memo(function AppContent({ initialTab = 'dashboard' }: { initialTab?: ActiveTab }) {
   const {isAuthenticated} = useAuth();
-  const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
+  const [activeTab, setActiveTab] = useState<ActiveTab>(initialTab);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -45,16 +45,4 @@ const AppContent = memo(function AppContent() {
   );
 });
 
-export default function App() {
-  return (
-    <ThemeProvider>
-      <ToastProvider>
-        <AuthProvider>
-          <DataProvider>
-            <AppContent />
-          </DataProvider>
-        </AuthProvider>
-      </ToastProvider>
-    </ThemeProvider>
-  );
-}
+export default AppContent;

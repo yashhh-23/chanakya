@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import {createContext, useContext, useState, ReactNode, useCallback, useMemo, useEffect} from 'react';
 import {Vehicle, Driver, Trip, VehicleStatus, DriverStatus, TripStatus} from '../types';
@@ -128,6 +128,11 @@ async function readJson<T>(url: string): Promise<T> {
     throw new Error(payload?.error || `Request failed: ${response.status}`);
   }
 
+  // Handle ApiResponse wrapped payloads { success: true, data: T }
+  if (payload && typeof payload === 'object' && payload.success === true && 'data' in payload) {
+    return payload.data as T;
+  }
+
   return payload as T;
 }
 
@@ -186,7 +191,8 @@ export function DataProvider({children}: {children: ReactNode}) {
         return {success: false, error: {field: 'regNumber', message: payload?.error || 'Vehicle registration failed.'}};
       }
 
-      setVehicles((prev) => [mapVehicle(payload as ApiVehicle), ...prev]);
+      const vehicleData = payload?.success && payload?.data ? payload.data : payload;
+      setVehicles((prev) => [mapVehicle(vehicleData as ApiVehicle), ...prev]);
       return {success: true};
     } catch (err) {
       return {success: false, error: {field: 'regNumber', message: err instanceof Error ? err.message : 'Vehicle registration failed.'}};
