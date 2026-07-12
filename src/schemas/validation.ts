@@ -72,7 +72,7 @@ export const driverSchema = z.object({
     .min(10, 'Contact number must be at least 10 digits')
     .regex(/^\+?[1-9]\d{1,14}$|^[0-9]{10,12}$/, 'Invalid contact number format (e.g. +919876543210 or 10-digit number)'),
   status: z
-    .enum(['AVAILABLE', 'ON_TRIP', 'SUSPENDED'])
+    .enum(['AVAILABLE', 'ON_TRIP', 'OFF_DUTY', 'SUSPENDED'])
     .default('AVAILABLE'),
   safetyScore: z.coerce.number().min(0).max(100).optional(),
   tripCompletionPct: z.coerce.number().min(0).max(100).optional(),

@@ -1,7 +1,7 @@
 import { prisma } from './prisma'
 
 export async function dispatchTrip(tripId: string) {
-  return await prisma.$transaction(async (tx) => {
+  return await prisma.$transaction(async (tx: any) => {
     const trip = await tx.trip.findUnique({
       where: { id: tripId },
       include: { vehicle: true, driver: true },
@@ -9,8 +9,8 @@ export async function dispatchTrip(tripId: string) {
 
     if (!trip) throw new Error("Trip not found")
     if (trip.status !== "Draft") throw new Error("Trip is already dispatched or completed")
-    if (trip.vehicle.status !== "Available") throw new Error("Vehicle is not available")
-    if (trip.driver.status !== "Available") throw new Error("Driver is not available")
+    if (!['Available', 'AVAILABLE'].includes(trip.vehicle.status)) throw new Error("Vehicle is not available")
+    if (!['Available', 'AVAILABLE'].includes(trip.driver.status)) throw new Error("Driver is not available")
     if (trip.driver.licenseExpiryDate < new Date()) throw new Error("Driver license is expired")
     if (trip.cargoWeight > trip.vehicle.maxLoadCapacity) throw new Error(`Capacity exceeded by ${trip.cargoWeight - trip.vehicle.maxLoadCapacity} kg — dispatch blocked`)
 
@@ -35,7 +35,7 @@ export async function dispatchTrip(tripId: string) {
 }
 
 export async function completeTrip(tripId: string, endOdometer: number, fuelConsumed: number) {
-  return await prisma.$transaction(async (tx) => {
+  return await prisma.$transaction(async (tx: any) => {
     const trip = await tx.trip.findUnique({
       where: { id: tripId },
       include: { vehicle: true },
@@ -91,7 +91,7 @@ export async function completeTrip(tripId: string, endOdometer: number, fuelCons
 }
 
 export async function cancelTrip(tripId: string) {
-  return await prisma.$transaction(async (tx) => {
+  return await prisma.$transaction(async (tx: any) => {
     const trip = await tx.trip.findUnique({
       where: { id: tripId },
     })
@@ -117,7 +117,7 @@ export async function cancelTrip(tripId: string) {
 }
 
 export async function logMaintenance(vehicleId: string, description: string, cost: number) {
-  return await prisma.$transaction(async (tx) => {
+  return await prisma.$transaction(async (tx: any) => {
     const vehicle = await tx.vehicle.findUnique({ where: { id: vehicleId } })
     if (!vehicle) throw new Error("Vehicle not found")
     if (vehicle.status === "Retired") throw new Error("Cannot maintain a retired vehicle")
@@ -140,7 +140,7 @@ export async function logMaintenance(vehicleId: string, description: string, cos
 }
 
 export async function closeMaintenance(logId: string) {
-  return await prisma.$transaction(async (tx) => {
+  return await prisma.$transaction(async (tx: any) => {
     const log = await tx.maintenanceLog.findUnique({ where: { id: logId } })
     if (!log) throw new Error("Maintenance log not found")
     if (!log.isOpen) throw new Error("Log is already closed")
