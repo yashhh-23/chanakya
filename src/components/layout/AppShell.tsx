@@ -143,7 +143,7 @@ export const AppShell = memo(function AppShell({
                 onClick={() => setActiveTab(item.id)}
                 className={`w-full flex items-center rounded-lg px-3 py-2.5 text-xs font-semibold transition-all duration-150 border ${
                   isActive
-                    ? 'bg-muted-base text-white border-border-base shadow-sm'
+                    ? 'bg-white/15 text-white border-white/10 shadow-sm'
                     : 'text-text-sidebar/70 border-transparent hover:bg-white/5 hover:text-white'
                 } ${sidebarCollapsed ? 'justify-center' : 'gap-3'}`}
                 title={item.label}
@@ -241,7 +241,7 @@ export const AppShell = memo(function AppShell({
                       }}
                       className={`w-full flex items-center rounded-lg px-3 py-2.5 text-xs font-semibold gap-3 transition-all border ${
                         isActive
-                          ? 'bg-muted-base text-white border-border-base'
+                          ? 'bg-white/15 text-white border-white/10'
                           : 'text-text-sidebar/70 border-transparent hover:bg-white/5 hover:text-white'
                       }`}
                       aria-current={isActive ? 'page' : undefined}
