@@ -31,7 +31,7 @@ async function main() {
       name: 'Dana Dispatcher',
       email: 'dispatcher@transitops.com',
       passwordHash: PASSWORD_HASH,
-      role: 'DISPATCHER',
+      role: 'DRIVER',
     },
   })
 

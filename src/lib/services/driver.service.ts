@@ -23,6 +23,8 @@ export class DriverService {
       throw err
     }
 
+    const statusVal = (data.status as string)?.toUpperCase() || 'AVAILABLE'
+
     return await prisma.driver.create({
       data: {
         name: data.name.trim(),
@@ -32,7 +34,7 @@ export class DriverService {
         contactNumber: data.contactNumber ?? '',
         safetyScore: data.safetyScore ?? 100,
         tripCompletionPct: data.tripCompletionPct ?? 0,
-        status: data.status ?? 'AVAILABLE'
+        status: statusVal
       }
     })
   }
@@ -43,24 +45,23 @@ export class DriverService {
   static async getDrivers(params: Partial<DriverQueryParams> = {}) {
     const where: any = {}
 
-    // Filter by exact status (checking both uppercase and titlecase to be robust against mixed seed values)
+    // Filter by exact status (checking uppercase)
     if (params.status && (params.status as string) !== 'ALL') {
       const normalized = normalizeStatus(params.status)
       if (normalized === 'AVAILABLE') {
-        where.status = { in: ['AVAILABLE', 'Available'] }
-      } else if (normalized === 'ON TRIP') {
-        where.status = { in: ['ON_TRIP', 'On Trip'] }
-      } else if (normalized === 'OFF DUTY') {
-        where.status = { in: ['OFF_DUTY', 'Off Duty'] }
+        where.status = 'AVAILABLE'
+      } else if (normalized === 'ON TRIP' || normalized === 'ON_TRIP') {
+        where.status = 'ON_TRIP'
+      } else if (normalized === 'OFF DUTY' || normalized === 'OFF_DUTY') {
+        where.status = 'OFF_DUTY'
       } else if (normalized === 'SUSPENDED') {
-        where.status = { in: ['SUSPENDED', 'Suspended'] }
+        where.status = 'SUSPENDED'
       } else {
-        where.status = params.status
+        where.status = normalized
       }
     }
 
     // Search across driver name and license number
-    // Note: MySQL default utf8mb4 collations handle case-insensitive search automatically.
     if (params.search) {
       where.OR = [
         { name: { contains: params.search } },
@@ -114,8 +115,8 @@ export class DriverService {
     if (data.safetyScore !== undefined) updateData.safetyScore = data.safetyScore
     if (data.tripCompletionPct !== undefined) updateData.tripCompletionPct = data.tripCompletionPct
     if (data.status !== undefined) {
-      // Delegate to changeDriverStatus checks if status is explicitly being updated here
-      return await DriverService.changeDriverStatus(id, data.status, updateData)
+      // Delegate to changeDriverStatus checks
+      return await DriverService.changeDriverStatus(id, data.status.toUpperCase(), updateData)
     }
 
     return await prisma.driver.update({
@@ -139,22 +140,22 @@ export class DriverService {
       throw err
     }
 
-    const currentUpper = normalizeStatus(driver.status)
-    const targetUpper = normalizeStatus(newStatus)
+    const currentUpper = driver.status.toUpperCase().replace(/[\s-]+/g, '_')
+    const targetUpper = newStatus.toUpperCase().replace(/[\s-]+/g, '_')
 
     // Rule 1: Expired license check
     const isExpired = driver.licenseExpiryDate < new Date()
-    if ((targetUpper === 'AVAILABLE' || targetUpper === 'ON TRIP') && isExpired) {
+    if ((targetUpper === 'AVAILABLE' || targetUpper === 'ON_TRIP') && isExpired) {
       throw new Error('Driver license is expired. Cannot assign to trips or set to Available.')
     }
 
     // Rule 2: Suspended driver cannot be assigned to trips
-    if (targetUpper === 'ON TRIP' && currentUpper === 'SUSPENDED') {
+    if (targetUpper === 'ON_TRIP' && currentUpper === 'SUSPENDED') {
       throw new Error('Driver status is Suspended. Cannot assign suspended driver to trips.')
     }
 
     // Rule 3: Already On Trip check
-    if (targetUpper === 'ON TRIP' && currentUpper === 'ON TRIP') {
+    if (targetUpper === 'ON_TRIP' && currentUpper === 'ON_TRIP') {
       throw new Error('Driver is already On Trip and cannot be assigned again.')
     }
 
@@ -162,7 +163,7 @@ export class DriverService {
       where: { id },
       data: {
         ...additionalUpdateData,
-        status: newStatus
+        status: targetUpper
       }
     })
   }

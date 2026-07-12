@@ -1,9 +1,16 @@
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getAuthenticatedUser } from '@/lib/auth'
 import { ApiResponse } from '@/lib/utils/api-response'
 import { normalizeStatus } from '@/lib/utils/status'
 
 export async function GET(request: Request) {
   try {
+    const user = getAuthenticatedUser(request)
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { searchParams } = new URL(request.url)
     const typeFilter = searchParams.get('type')
     const regionFilter = searchParams.get('region')
@@ -29,24 +36,27 @@ export async function GET(request: Request) {
       ? Math.round((activeVehicles / operationalCount) * 1000) / 10
       : 0
 
-    // Fetch active and pending trips (handling both Title Case and UPPERCASE)
+    // Fetch active and pending trips using standard UPPER_CASE
     const [activeTrips, pendingTrips, driversOnDuty, recentTrips] = await Promise.all([
       prisma.trip.count({
         where: {
-          status: { in: ['Dispatched', 'DISPATCHED'] }
+          status: 'DISPATCHED'
         }
       }),
       prisma.trip.count({
         where: {
-          status: { in: ['Draft', 'DRAFT'] }
+          status: 'DRAFT'
         }
       }),
       prisma.driver.count({
         where: {
-          status: { in: ['On Trip', 'ON_TRIP'] }
+          status: 'ON_TRIP'
         }
       }),
       prisma.trip.findMany({
+        where: {
+          vehicle: vehicleWhere
+        },
         take: 10,
         orderBy: { createdAt: 'desc' },
         include: {

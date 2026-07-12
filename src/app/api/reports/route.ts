@@ -1,10 +1,22 @@
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getAuthenticatedUser } from '@/lib/auth'
+import { checkPermission } from '@/lib/rbac'
 import { ApiResponse } from '@/lib/utils/api-response'
 import { normalizeStatus } from '@/lib/utils/status'
 import { VehicleService } from '@/lib/services/vehicle.service'
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const user = getAuthenticatedUser(request)
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
+
+    if (!checkPermission(user.role, 'view:reports') && !checkPermission(user.role, 'view:analytics')) {
+      return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 })
+    }
+
     const [vehicles, trips, expenses, fuelLogs] = await Promise.all([
       prisma.vehicle.findMany({
         orderBy: { registrationNumber: 'asc' },

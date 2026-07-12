@@ -1,14 +1,28 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { ApiResponse } from '@/lib/utils/api-response'
+import { tripSchema } from '@/schemas/validation'
+import { getAuthenticatedUser } from '@/lib/auth'
+import { checkPermission } from '@/lib/rbac'
+import { z } from 'zod'
 
-export async function GET(request: Request) {
+const apiTripSchema = tripSchema.extend({
+  revenue: z.coerce.number().optional().nullable()
+})
+
+export async function GET(request: NextRequest) {
   try {
+    const user = getAuthenticatedUser(request)
+    if (!user) return ApiResponse.serverError(new Error('Unauthorized'))
+
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
     
-    // Live board polling uses this endpoint with specific statuses (e.g., status=Dispatched)
+    // Live board polling uses this endpoint with specific statuses (standardised to UPPER_CASE)
     const where: any = {}
-    if (status) where.status = status
+    if (status) {
+      where.status = status.toUpperCase()
+    }
 
     const trips = await prisma.trip.findMany({
       where,
@@ -19,44 +33,73 @@ export async function GET(request: Request) {
       orderBy: { createdAt: 'desc' }
     })
     
-    return NextResponse.json(trips)
+    return ApiResponse.success(trips)
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return ApiResponse.serverError(error)
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const data = await request.json()
+    const user = getAuthenticatedUser(request)
+    if (!user) return ApiResponse.serverError(new Error('Unauthorized'))
+
+    if (!checkPermission(user.role, 'manage:trips')) {
+      return ApiResponse.serverError(new Error('Forbidden'))
+    }
+
+    const body = await request.json()
     
-    if (!data.source || !data.destination || !data.vehicleId || !data.driverId || !data.cargoWeight || !data.plannedDistance) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
-    }
+    // Validate payload (BUG-7)
+    const validatedData = apiTripSchema.parse(body)
 
-    const vehicle = await prisma.vehicle.findUnique({ where: { id: data.vehicleId } })
+    // Verify vehicle exists (BUG-4)
+    const vehicle = await prisma.vehicle.findUnique({ where: { id: validatedData.vehicleId } })
     if (!vehicle) {
-      return NextResponse.json({ error: 'Vehicle not found' }, { status: 404 })
+      return ApiResponse.notFound('Vehicle not found')
     }
 
-    if (parseFloat(data.cargoWeight) > vehicle.maxLoadCapacity) {
-      return NextResponse.json({ error: 'Cargo weight exceeds vehicle capacity' }, { status: 400 })
+    // Check cargo capacity
+    if (validatedData.cargoWeight > vehicle.maxLoadCapacity) {
+      return ApiResponse.validationError(new z.ZodError([
+        {
+          path: ['cargoWeight'],
+          message: 'Cargo weight exceeds vehicle capacity',
+          code: 'custom'
+        }
+      ]))
+    }
+
+    // Verify driver exists and status eligibility (BUG-4)
+    const driver = await prisma.driver.findUnique({ where: { id: validatedData.driverId } })
+    if (!driver) {
+      return ApiResponse.notFound('Driver not found')
+    }
+
+    const upperDriverStatus = driver.status.toUpperCase()
+    if (upperDriverStatus !== 'AVAILABLE') {
+      return ApiResponse.conflict('Driver is not available for assignment')
+    }
+
+    if (driver.licenseExpiryDate < new Date()) {
+      return ApiResponse.conflict('Driver license is expired. Cannot assign to trips.')
     }
 
     const trip = await prisma.trip.create({
       data: {
-        source: data.source,
-        destination: data.destination,
-        vehicleId: data.vehicleId,
-        driverId: data.driverId,
-        cargoWeight: parseFloat(data.cargoWeight),
-        plannedDistance: parseFloat(data.plannedDistance),
-        revenue: data.revenue ? parseFloat(data.revenue) : null,
-        status: 'Draft',
+        source: validatedData.source,
+        destination: validatedData.destination,
+        vehicleId: validatedData.vehicleId,
+        driverId: validatedData.driverId,
+        cargoWeight: validatedData.cargoWeight,
+        plannedDistance: validatedData.plannedDistance,
+        revenue: validatedData.revenue ?? null,
+        status: 'DRAFT',
       }
     })
 
-    return NextResponse.json(trip, { status: 201 })
+    return ApiResponse.success(trip, 201)
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return ApiResponse.serverError(error)
   }
 }

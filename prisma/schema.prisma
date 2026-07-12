@@ -27,7 +27,7 @@ model Vehicle {
   odometer           Float
   acquisitionCost    Float
   region             String?
-  status             String    @default("Available")
+  status             String    @default("AVAILABLE")
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @default(now()) @updatedAt
 
@@ -47,7 +47,7 @@ model Driver {
   contactNumber     String
   safetyScore       Float    @default(100)
   tripCompletionPct Float    @default(0)
-  status            String   @default("Available")
+  status            String   @default("AVAILABLE")
   createdAt         DateTime @default(now())
   updatedAt         DateTime @default(now()) @updatedAt
 
@@ -64,7 +64,7 @@ model Trip {
   cargoWeight     Float
   plannedDistance Float
   revenue         Float?
-  status          String   @default("Draft")
+  status          String   @default("DRAFT")
   startOdometer   Float?
   endOdometer     Float?
   fuelConsumed    Float?

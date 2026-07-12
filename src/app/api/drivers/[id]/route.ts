@@ -2,6 +2,9 @@ import { NextRequest } from 'next/server'
 import { DriverService } from '@/lib/services/driver.service'
 import { ApiResponse } from '@/lib/utils/api-response'
 import { updateDriverSchema } from '@/lib/validations/driver.backend'
+import { getAuthenticatedUser } from '@/lib/auth'
+import { checkPermission } from '@/lib/rbac'
+import { prisma } from '@/lib/prisma'
 
 /**
  * GET /api/drivers/[id]
@@ -12,6 +15,13 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = getAuthenticatedUser(request)
+    if (!user) return ApiResponse.serverError(new Error('Unauthorized'))
+    
+    if (!checkPermission(user.role, 'view:drivers') && !checkPermission(user.role, 'view:dashboard')) {
+      return ApiResponse.serverError(new Error('Forbidden'))
+    }
+
     const { id } = await params
     const driver = await DriverService.getDriverById(id)
 
@@ -34,6 +44,13 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = getAuthenticatedUser(request)
+    if (!user) return ApiResponse.serverError(new Error('Unauthorized'))
+    
+    if (!checkPermission(user.role, 'manage:drivers')) {
+      return ApiResponse.serverError(new Error('Forbidden'))
+    }
+
     const { id } = await params
     const existing = await DriverService.getDriverById(id)
 
@@ -47,19 +64,18 @@ export async function PATCH(
     // Check duplicate license number if being updated
     if (
       validatedData.licenseNumber &&
-      validatedData.licenseNumber.toUpperCase() !== existing.licenseNumber
+      validatedData.licenseNumber.toUpperCase() !== existing.licenseNumber.toUpperCase()
     ) {
-      const duplicates = await DriverService.getDrivers({
-        search: validatedData.licenseNumber
+      const duplicate = await prisma.driver.findUnique({
+        where: { licenseNumber: validatedData.licenseNumber.toUpperCase() }
       })
-      const isDuplicate = duplicates.some(
-        (d: any) =>
-          d.id !== id &&
-          d.licenseNumber.toUpperCase() === validatedData.licenseNumber?.toUpperCase()
-      )
-      if (isDuplicate) {
+      if (duplicate && duplicate.id !== id) {
         return ApiResponse.conflict('License number already exists on another driver.')
       }
+    }
+
+    if (validatedData.status) {
+      validatedData.status = validatedData.status.toUpperCase() as any
     }
 
     const updatedDriver = await DriverService.updateDriver(id, validatedData)

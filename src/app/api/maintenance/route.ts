@@ -1,15 +1,19 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ApiResponse } from "@/lib/utils/api-response";
-import { logMaintenance } from "@/lib/transitions";
 import { maintenanceSchema } from "@/schemas/validation";
+import { getAuthenticatedUser } from "@/lib/auth";
+import { checkPermission } from "@/lib/rbac";
 
 /**
  * GET /api/maintenance
  * Fetch all maintenance records including their associated vehicle information, sorted by startDate descending.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const user = getAuthenticatedUser(request)
+    if (!user) return ApiResponse.serverError(new Error('Unauthorized'))
+
     const logs = await prisma.maintenanceLog.findMany({
       orderBy: { startDate: 'desc' },
       include: { vehicle: true },
@@ -26,6 +30,13 @@ export async function GET() {
  */
 export async function POST(request: NextRequest) {
   try {
+    const user = getAuthenticatedUser(request)
+    if (!user) return ApiResponse.serverError(new Error('Unauthorized'))
+
+    if (!checkPermission(user.role, 'manage:maintenance')) {
+      return ApiResponse.serverError(new Error('Forbidden'))
+    }
+
     const body = await request.json();
     
     // Validate request body
@@ -36,53 +47,54 @@ export async function POST(request: NextRequest) {
     
     const { vehicleId, description, cost, date } = validationResult.data;
     
-    // logMaintenance handles transactions, vehicle status check, transitions, and creation
-    const log = await logMaintenance(vehicleId, description, cost);
-    
-    // If the user specified a custom date, update the log's startDate to match
-    if (date) {
-      const updatedLog = await prisma.maintenanceLog.update({
-        where: { id: log.id },
-        data: { startDate: new Date(date) },
-        include: { vehicle: true },
-      });
+    // Wrap all operations in an atomic transaction (BUG-6)
+    const log = await prisma.$transaction(async (tx) => {
+      const vehicle = await tx.vehicle.findUnique({ where: { id: vehicleId } })
+      if (!vehicle) throw new Error("Vehicle not found")
       
-      // Create corresponding Expense log per PRD requirements
-      await prisma.expense.create({
+      const upperStatus = vehicle.status.toUpperCase()
+      if (upperStatus === "RETIRED") throw new Error("Cannot maintain a retired vehicle")
+      if (upperStatus === "ON_TRIP" || upperStatus === "ON TRIP") throw new Error("Cannot maintain a vehicle that is actively on a trip")
+
+      await tx.vehicle.update({
+        where: { id: vehicleId },
+        data: { status: "IN_SHOP" },
+      })
+
+      const startDate = date ? new Date(date) : new Date()
+
+      const newLog = await tx.maintenanceLog.create({
+        data: {
+          vehicleId,
+          description,
+          cost,
+          isOpen: true,
+          startDate
+        },
+        include: { vehicle: true }
+      })
+
+      await tx.expense.create({
         data: {
           vehicleId,
           category: 'Maintenance',
           amount: cost,
           description: `Maintenance: ${description}`,
-          date: new Date(date),
+          date: startDate,
         },
-      });
+      })
 
-      return ApiResponse.success(updatedLog, 201);
-    }
+      return newLog
+    })
 
-    // Default to now for Expense if no date
-    await prisma.expense.create({
-      data: {
-        vehicleId,
-        category: 'Maintenance',
-        amount: cost,
-        description: `Maintenance: ${description}`,
-        date: new Date(),
-      },
-    });
-
-    const fullLog = await prisma.maintenanceLog.findUnique({
-      where: { id: log.id },
-      include: { vehicle: true },
-    });
-
-    return ApiResponse.success(fullLog, 201);
+    return ApiResponse.success(log, 201);
   } catch (error: any) {
+    if (error.message && error.message.includes("not found")) {
+      return ApiResponse.notFound(error.message);
+    }
     if (
       error.message &&
-      (error.message.includes("not found") ||
-        error.message.includes("Retired") ||
+      (error.message.includes("Retired") ||
         error.message.includes("actively on a trip"))
     ) {
       return ApiResponse.conflict(error.message);

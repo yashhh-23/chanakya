@@ -50,6 +50,13 @@ export function AuthProvider({children}: {children: ReactNode}) {
     } else {
       sessionStorage.setItem('transitops-user', userStr);
     }
+
+    // Set cookie for backend authentication
+    if (typeof document !== 'undefined') {
+      const maxAge = rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60;
+      document.cookie = `transitops-user=${encodeURIComponent(userStr)}; path=/; max-age=${maxAge}; SameSite=Strict`;
+    }
+
     return true;
   }, []);
 
@@ -57,6 +64,11 @@ export function AuthProvider({children}: {children: ReactNode}) {
     setUser(null);
     localStorage.removeItem('transitops-user');
     sessionStorage.removeItem('transitops-user');
+
+    // Clear cookie
+    if (typeof document !== 'undefined') {
+      document.cookie = 'transitops-user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict';
+    }
   }, []);
 
   const setRole = useCallback((role: UserRole) => {
@@ -65,11 +77,19 @@ export function AuthProvider({children}: {children: ReactNode}) {
       const updated = {...prev, role};
       
       const userStr = JSON.stringify(updated);
-      if (localStorage.getItem('transitops-user')) {
+      const isRemembered = !!localStorage.getItem('transitops-user');
+      if (isRemembered) {
         localStorage.setItem('transitops-user', userStr);
       } else {
         sessionStorage.setItem('transitops-user', userStr);
       }
+
+      // Update cookie
+      if (typeof document !== 'undefined') {
+        const maxAge = isRemembered ? 30 * 24 * 60 * 60 : 24 * 60 * 60;
+        document.cookie = `transitops-user=${encodeURIComponent(userStr)}; path=/; max-age=${maxAge}; SameSite=Strict`;
+      }
+
       return updated;
     });
   }, []);

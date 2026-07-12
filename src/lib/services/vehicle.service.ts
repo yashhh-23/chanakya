@@ -13,6 +13,7 @@ export class VehicleService {
    * Create a new vehicle
    */
   static async createVehicle(data: CreateVehicleInput) {
+    const statusVal = (data.status as string)?.toUpperCase() || 'AVAILABLE'
     return await prisma.vehicle.create({
       data: {
         registrationNumber: data.registrationNumber.toUpperCase(),
@@ -22,7 +23,7 @@ export class VehicleService {
         odometer: data.odometer ?? 0,
         acquisitionCost: data.acquisitionCost,
         region: data.region ?? 'HQ',
-        status: (data.status as VehicleStatusString) ?? 'AVAILABLE'
+        status: statusVal
       }
     })
   }
@@ -34,8 +35,8 @@ export class VehicleService {
     const where: any = {}
 
     // Filter by exact status
-    if (params.status) {
-      where.status = params.status as VehicleStatusString
+    if (params.status && (params.status as string) !== 'ALL') {
+      where.status = params.status.toUpperCase()
     }
 
     // Filter by exact type
@@ -43,13 +44,12 @@ export class VehicleService {
       where.type = params.type
     }
 
-    // Dispatch eligible option: status must be AVAILABLE (excludes RETIRED, IN_SHOP, ON_TRIP)
+    // Dispatch eligible option: status must be AVAILABLE
     if (params.dispatchEligible === 'true') {
       where.status = 'AVAILABLE'
     }
 
     // Search across registration number and name
-    // Note: MySQL default utf8mb4 collations handle case-insensitive search automatically.
     if (params.search) {
       where.OR = [
         { registrationNumber: { contains: params.search } },
@@ -89,7 +89,12 @@ export class VehicleService {
     if (data.odometer !== undefined) updateData.odometer = data.odometer
     if (data.acquisitionCost !== undefined) updateData.acquisitionCost = data.acquisitionCost
     if (data.region !== undefined) updateData.region = data.region
-    if (data.status !== undefined) updateData.status = data.status as VehicleStatusString
+    
+    if (data.status !== undefined) {
+      // Delegate to changeVehicleStatus checks
+      const upperStatus = data.status.toUpperCase()
+      return await VehicleService.changeVehicleStatus(id, upperStatus, updateData)
+    }
 
     return await prisma.vehicle.update({
       where: { id },
@@ -98,9 +103,69 @@ export class VehicleService {
   }
 
   /**
+   * Centralized Helper for Vehicle Status Transitions.
+   * Enforces PRD compliance rules before updating state.
+   */
+  static async changeVehicleStatus(id: string, newStatus: string, additionalUpdateData: any = {}) {
+    const vehicle = await prisma.vehicle.findUnique({
+      where: { id }
+    })
+
+    if (!vehicle) {
+      const err: any = new Error('Vehicle not found.')
+      err.code = 'P2025'
+      throw err
+    }
+
+    const currentUpper = vehicle.status.toUpperCase().replace(/[\s_-]+/g, '_')
+    const targetUpper = newStatus.toUpperCase().replace(/[\s_-]+/g, '_')
+
+    // Enforce business rules
+    if (currentUpper === 'ON_TRIP' && targetUpper !== 'ON_TRIP') {
+      const activeTripsCount = await prisma.trip.count({
+        where: { vehicleId: id, status: 'DISPATCHED' }
+      })
+      if (activeTripsCount > 0) {
+        throw new Error('Vehicle is actively on a dispatched trip. Complete or cancel the trip first.')
+      }
+    }
+
+    if (targetUpper === 'ON_TRIP') {
+      if (currentUpper === 'RETIRED') {
+        throw new Error('Cannot assign a retired vehicle to a trip.')
+      }
+      if (currentUpper === 'IN_SHOP') {
+        throw new Error('Vehicle is in maintenance shop. Cannot assign to trips.')
+      }
+    }
+
+    if (targetUpper === 'IN_SHOP' && currentUpper === 'ON_TRIP') {
+      throw new Error('Cannot send a vehicle to maintenance shop while it is on a trip.')
+    }
+
+    return await prisma.vehicle.update({
+      where: { id },
+      data: {
+        ...additionalUpdateData,
+        status: targetUpper
+      }
+    })
+  }
+
+  /**
    * Retire a vehicle (Soft action that changes status to RETIRED without deleting records)
    */
   static async retireVehicle(id: string) {
+    const vehicle = await prisma.vehicle.findUnique({ where: { id } })
+    if (!vehicle) {
+      throw new Error('Vehicle not found')
+    }
+
+    const upperStatus = vehicle.status.toUpperCase()
+    if (upperStatus === 'ON_TRIP' || upperStatus === 'ON TRIP') {
+      throw new Error('Cannot retire a vehicle that is actively on a trip.')
+    }
+
     return await prisma.vehicle.update({
       where: { id },
       data: {
