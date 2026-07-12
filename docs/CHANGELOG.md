@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 
 ### Changed
+- [`17efa30`](https://github.com/yashhh-23/chanakya/commit/17efa309b10468f9739b2cf9782092e0d8e75615) DOCS: Remove logo image from PRD
 - [`d8840e9`](https://github.com/yashhh-23/chanakya/commit/d8840e9bdeb20f2c2fde650e2ee80f28d65146ee) DOCS: Add detailed PRD transport.md to docs/
 
 ### Internal
