@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 import { CreateDriverInput, UpdateDriverInput, DriverQueryParams } from '@/lib/validations/driver.backend'
 import { normalizeStatus } from '@/lib/utils/status'
 
@@ -43,7 +44,7 @@ export class DriverService {
    * List drivers with filtering, search, and whitelisted sorting
    */
   static async getDrivers(params: Partial<DriverQueryParams> = {}) {
-    const where: any = {}
+    const where: Prisma.DriverWhereInput = {}
 
     // Filter by exact status (checking uppercase)
     if (params.status && (params.status as string) !== 'ALL') {
@@ -69,7 +70,7 @@ export class DriverService {
       ]
     }
 
-    const orderBy: any = {
+    const orderBy: Prisma.DriverOrderByWithRelationInput = {
       [params.sortBy || 'createdAt']: params.sortOrder || 'desc'
     }
 
@@ -92,7 +93,7 @@ export class DriverService {
    * Update an existing driver by ID
    */
   static async updateDriver(id: string, data: UpdateDriverInput) {
-    const updateData: any = {}
+    const updateData: Prisma.DriverUpdateInput = {}
 
     if (data.name !== undefined) updateData.name = data.name.trim()
     if (data.licenseNumber !== undefined) {
@@ -129,7 +130,7 @@ export class DriverService {
    * Centralized Helper for Driver Status Transitions.
    * Enforces PRD compliance rules before updating state.
    */
-  static async changeDriverStatus(id: string, newStatus: string, additionalUpdateData: any = {}) {
+  static async changeDriverStatus(id: string, newStatus: string, additionalUpdateData: Prisma.DriverUpdateInput = {}) {
     const driver = await prisma.driver.findUnique({
       where: { id }
     })

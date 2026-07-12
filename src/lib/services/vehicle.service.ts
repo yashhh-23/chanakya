@@ -1,8 +1,6 @@
 import { prisma } from '@/lib/prisma'
-import { Prisma } from '@prisma/client'
+import { Prisma, Vehicle, Expense } from '@prisma/client'
 import { CreateVehicleInput, UpdateVehicleInput, VehicleQueryParams } from '@/lib/validations/vehicle.backend'
-
-type VehicleStatusString = 'AVAILABLE' | 'ON_TRIP' | 'IN_SHOP' | 'RETIRED'
 
 /**
  * Service layer for Vehicle CRUD operations.
@@ -32,7 +30,7 @@ export class VehicleService {
    * List vehicles with filtering, search, whitelisted sorting, and dispatch eligibility option
    */
   static async getVehicles(params: Partial<VehicleQueryParams> = {}) {
-    const where: any = {}
+    const where: Prisma.VehicleWhereInput = {}
 
     // Filter by exact status
     if (params.status && (params.status as string) !== 'ALL') {
@@ -57,7 +55,7 @@ export class VehicleService {
       ]
     }
 
-    const orderBy: any = {
+    const orderBy: Prisma.VehicleOrderByWithRelationInput = {
       [params.sortBy || 'createdAt']: params.sortOrder || 'desc'
     }
 
@@ -80,7 +78,7 @@ export class VehicleService {
    * Update an existing vehicle by ID
    */
   static async updateVehicle(id: string, data: UpdateVehicleInput) {
-    const updateData: any = {}
+    const updateData: Prisma.VehicleUpdateInput = {}
 
     if (data.registrationNumber !== undefined) updateData.registrationNumber = data.registrationNumber.toUpperCase()
     if (data.name !== undefined) updateData.name = data.name
@@ -106,7 +104,7 @@ export class VehicleService {
    * Centralized Helper for Vehicle Status Transitions.
    * Enforces PRD compliance rules before updating state.
    */
-  static async changeVehicleStatus(id: string, newStatus: string, additionalUpdateData: any = {}) {
+  static async changeVehicleStatus(id: string, newStatus: string, additionalUpdateData: Prisma.VehicleUpdateInput = {}) {
     const vehicle = await prisma.vehicle.findUnique({
       where: { id }
     })
@@ -191,7 +189,7 @@ export class VehicleService {
   /**
    * Compute aggregated fuel, maintenance, other, and total operational costs per vehicle
    */
-  static getCostBreakdownForVehicles(vehicles: any[], expenses: any[]) {
+  static getCostBreakdownForVehicles(vehicles: Vehicle[], expenses: Expense[]) {
     const summaryMap: Record<
       string,
       {
@@ -205,10 +203,10 @@ export class VehicleService {
       }
     > = {}
 
-    vehicles.forEach((v: any) => {
+    vehicles.forEach((v) => {
       summaryMap[v.id] = {
         vehicleId: v.id,
-        registrationNumber: v.registrationNumber || v.regNumber || '',
+        registrationNumber: v.registrationNumber,
         name: v.name,
         fuelCost: 0,
         maintenanceCost: 0,
@@ -217,7 +215,7 @@ export class VehicleService {
       }
     })
 
-    expenses.forEach((exp: any) => {
+    expenses.forEach((exp) => {
       const entry = summaryMap[exp.vehicleId]
       if (entry) {
         const cat = (exp.category || '').toUpperCase()
@@ -233,5 +231,103 @@ export class VehicleService {
     })
 
     return summaryMap
+  }
+
+  /**
+   * Extract fuel-expenses route GET aggregator logic to service layer (SMELL-3)
+   */
+  static async getExpensesSummary(vehicleIdFilter?: string | null, categoryFilter?: string | null) {
+    const fuelWhere: Prisma.FuelLogWhereInput = {}
+    const expenseWhere: Prisma.ExpenseWhereInput = {}
+
+    if (vehicleIdFilter && vehicleIdFilter !== 'ALL') {
+      fuelWhere.vehicleId = vehicleIdFilter
+      expenseWhere.vehicleId = vehicleIdFilter
+    }
+    if (categoryFilter && categoryFilter !== 'ALL') {
+      expenseWhere.category = categoryFilter
+    }
+
+    const [fuelLogs, expenses, vehicles] = await Promise.all([
+      prisma.fuelLog.findMany({
+        where: fuelWhere,
+        orderBy: { date: 'desc' },
+        include: { vehicle: true },
+      }),
+      prisma.expense.findMany({
+        where: expenseWhere,
+        orderBy: { date: 'desc' },
+        include: { vehicle: true },
+      }),
+      prisma.vehicle.findMany({
+        select: {
+          id: true,
+          registrationNumber: true,
+          name: true,
+          status: true,
+        },
+      }),
+    ])
+
+    // Auto-compute operational cost summary per vehicle (BUG-12 optimized using groupBy)
+    const summaryMap: Record<
+      string,
+      {
+        vehicleId: string
+        registrationNumber: string
+        name: string
+        fuelCost: number
+        maintenanceCost: number
+        otherCost: number
+        totalOperationalCost: number
+      }
+    > = {}
+
+    vehicles.forEach((v) => {
+      summaryMap[v.id] = {
+        vehicleId: v.id,
+        registrationNumber: v.registrationNumber,
+        name: v.name,
+        fuelCost: 0,
+        maintenanceCost: 0,
+        otherCost: 0,
+        totalOperationalCost: 0,
+      }
+    })
+
+    const groupByWhere: Prisma.ExpenseWhereInput = {}
+    if (vehicleIdFilter && vehicleIdFilter !== 'ALL') {
+      groupByWhere.vehicleId = vehicleIdFilter
+    }
+
+    const summaries = await prisma.expense.groupBy({
+      by: ['vehicleId', 'category'],
+      _sum: {
+        amount: true
+      },
+      where: groupByWhere
+    })
+
+    summaries.forEach((sum) => {
+      const entry = summaryMap[sum.vehicleId]
+      if (entry) {
+        const amount = sum._sum?.amount || 0
+        if (sum.category === 'Fuel') {
+          entry.fuelCost = amount
+        } else if (sum.category === 'Maintenance') {
+          entry.maintenanceCost = amount
+        } else {
+          entry.otherCost += amount
+        }
+        entry.totalOperationalCost += amount
+      }
+    })
+
+    return {
+      fuelLogs,
+      expenses,
+      vehicles,
+      vehicleSummaries: Object.values(summaryMap),
+    }
   }
 }

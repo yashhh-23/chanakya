@@ -15,3 +15,24 @@ export const EXPENSE_CATEGORIES = {
   MAINTENANCE: 'MAINTENANCE',
   OTHER: 'OTHER'
 } as const;
+
+export const VEHICLE_STATUS = {
+  AVAILABLE: 'AVAILABLE',
+  ON_TRIP: 'ON_TRIP',
+  IN_SHOP: 'IN_SHOP',
+  RETIRED: 'RETIRED'
+} as const;
+
+export const DRIVER_STATUS = {
+  AVAILABLE: 'AVAILABLE',
+  ON_TRIP: 'ON_TRIP',
+  OFF_DUTY: 'OFF_DUTY',
+  SUSPENDED: 'SUSPENDED'
+} as const;
+
+export const TRIP_STATUS = {
+  DRAFT: 'DRAFT',
+  DISPATCHED: 'DISPATCHED',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED'
+} as const;
