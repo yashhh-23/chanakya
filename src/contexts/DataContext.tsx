@@ -2,6 +2,7 @@
 
 import {createContext, useContext, useState, ReactNode, useCallback, useMemo, useEffect} from 'react';
 import {Vehicle, Driver, Trip, VehicleStatus, DriverStatus, TripStatus, MaintenanceLog, FuelLog, Expense, VehicleSummary} from '../types';
+import {useAuth} from './AuthContext';
 
 interface ApiFieldResult {
   success: boolean;
@@ -243,9 +244,23 @@ export function DataProvider({children}: {children: ReactNode}) {
     }
   }, []);
 
+  const {isAuthenticated} = useAuth();
+
   useEffect(() => {
-    void refreshData();
-  }, [refreshData]);
+    if (isAuthenticated) {
+      void refreshData();
+    } else {
+      setVehicles([]);
+      setDrivers([]);
+      setTrips([]);
+      setMaintenanceLogs([]);
+      setFuelLogs([]);
+      setExpenses([]);
+      setVehicleSummaries([]);
+      setError(null);
+      setLoading(false);
+    }
+  }, [isAuthenticated, refreshData]);
 
   const addVehicle = useCallback(async (newVehicle: Vehicle): Promise<ApiFieldResult> => {
     try {

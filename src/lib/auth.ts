@@ -23,13 +23,20 @@ export function getAuthenticatedUser(request: Request | NextRequest): User | nul
       }
     }
 
-    if (!cookieStr) return null;
+    if (!cookieStr) {
+      const allCookies = 'cookies' in request ? 'has cookies property' : 'no cookies property';
+      const cookieHeader = request.headers.get('cookie') || 'none';
+      console.log(`[AUTH DEBUG] getAuthenticatedUser failed. x-user-data: ${request.headers.get('x-user-data') || 'none'}, cookieHeader: ${cookieHeader}, cookiesProperty: ${allCookies}`);
+      return null;
+    }
     const user = JSON.parse(cookieStr) as User;
     if (user && user.email && user.role) {
       return user;
     }
+    console.log('[AUTH DEBUG] Parsed user object lacks email or role:', user);
     return null;
-  } catch (error) {
+  } catch (error: any) {
+    console.log('[AUTH DEBUG] Error parsing cookieStr:', error.message);
     return null;
   }
 }
