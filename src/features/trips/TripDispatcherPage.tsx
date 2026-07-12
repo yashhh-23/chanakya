@@ -123,9 +123,9 @@ export const TripDispatcherPage = memo(function TripDispatcherPage() {
         {!isCreating && (
           <button
             onClick={() => setIsCreating(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-primary-base text-white rounded-lg hover:bg-primary-hover transition-colors font-medium shadow-sm"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-border-base bg-bg-surface text-text-base hover:bg-bg-card shadow-sm"
           >
-            <Plus size={18} />
+            <Plus size={16} />
             Create Trip
           </button>
         )}

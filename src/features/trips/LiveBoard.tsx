@@ -3,6 +3,7 @@ import { useData } from '../../contexts/DataContext';
 import { TripStatus } from '../../types';
 import { Clock, RefreshCw, AlertTriangle, Navigation } from 'lucide-react';
 import { SpinnerLinear } from '../../components/ui/StatusAndMetrics';
+import { StatusBadge } from '../../components/ui/StatusBadge';
 
 export const LiveBoard = memo(function LiveBoard() {
   const { trips, vehicles, drivers, refreshData, loading } = useData();
@@ -23,26 +24,10 @@ export const LiveBoard = memo(function LiveBoard() {
 
   const activeTrips = useMemo(() => {
     return trips.filter(t => {
-      const s = (t.status || '').toUpperCase()
-      return s === 'DISPATCHED' || s === 'COMPLETED'
-    })
+      const s = (t.status || '').toUpperCase();
+      return s === 'DISPATCHED';
+    });
   }, [trips]);
-
-  const getStatusBadge = (status: string) => {
-    const s = (status || '').toUpperCase()
-    const styles: Record<string, string> = {
-      DRAFT: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20',
-      DISPATCHED: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
-      COMPLETED: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-      CANCELLED: 'bg-red-500/10 text-red-400 border-red-500/20',
-    };
-    
-    return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${styles[s] || styles.DRAFT}`}>
-        {s}
-      </span>
-    );
-  };
 
   if (loading && trips.length === 0) {
     return (
@@ -107,7 +92,7 @@ export const LiveBoard = memo(function LiveBoard() {
                     {trip.driver?.name || trip.driverId}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    {getStatusBadge(trip.status)}
+                    <StatusBadge status={trip.status} size="sm" />
                   </td>
                   <td className="px-6 py-4 text-text-muted whitespace-nowrap">
                     {trip.eta || 'Calculating...'}
