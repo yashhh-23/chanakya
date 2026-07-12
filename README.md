@@ -1,6 +1,6 @@
 # TransitOps (Chanakya)
 
-**TransitOps** is an internal fleet and logistics management dashboard designed for an enterprise logistics company operating over 500 heavy vehicles. It serves as the central command center for dispatchers, fleet managers, and executives to track vehicles, manage drivers, monitor live trips, and analyze operational KPIs in real-time.
+**TransitOps** is an internal fleet and logistics management dashboard designed for an enterprise logistics company operating over 500 heavy vehicles. It serves as the central command center for dispatchers, fleet managers, safety officers, and financial analysts to track vehicles, manage drivers, monitor live trips, and analyze operational KPIs in real-time.
 
 Built as part of an 8-hour Hackathon, this project focuses on robust business logic, a strict state machine for vehicle/driver availability, and a responsive, high-performance UI.
 
@@ -9,19 +9,20 @@ Built as part of an 8-hour Hackathon, this project focuses on robust business lo
 ## Key Features
 
 * **Real-time Live Board:** A 15-second auto-refreshing dashboard showing all currently active deliveries, their assigned drivers, and dispatch status.
-* **Strict State Machine:** Centralized business logic ensures that drivers with expired licenses cannot be assigned, and vehicles that are "In Shop" or "Retired" cannot be dispatched.
-* **Vehicle & Driver Registry:** Full CRUD operations for managing the fleet. Includes tracking max load capacity, safety scores, and odometer readings.
+* **Role-Based Access Control (RBAC):** Centralized permission mapping for `FLEET_MANAGER`, `DRIVER`, `SAFETY_OFFICER`, and `FINANCIAL_ANALYST` to ensure secure read/write authorization.
+* **Strict State Machine:** Centralized business logic in `transitions.ts` ensures that drivers with expired licenses cannot be assigned, and vehicles that are "In Shop" or "Retired" cannot be dispatched.
+* **Vehicle & Driver Registry:** Full CRUD operations for managing the fleet, with strict validation for duplicate registration and license numbers.
 * **Trip Dispatcher:** A robust wizard for drafting, dispatching, completing, and canceling trips. Automatically handles vehicle and driver status transitions (Available ↔ On Trip).
-* **Fuel & Maintenance Logging:** Automatic expense tracking. Completing a trip auto-generates fuel logs based on consumption, tying expenses directly to operational revenue.
-* **Analytics & KPIs:** Dashboard widgets for Fleet Utilization, Revenue per Km, and Maintenance costs.
+* **Fuel & Maintenance Logging:** Atomic expense tracking using transactional writes. Completing a trip auto-logs fuel consumption, tying expenses directly to operational revenue.
+* **Analytics & KPIs:** Dashboard widgets for Fleet Utilization, Revenue per Km, and Maintenance costs, including filtered recent trips tables.
 
 ---
 
 ## Tech Stack
 
-* **Frontend:** Next.js (App Router), React, Tailwind CSS, Shadcn/UI (planned)
+* **Frontend:** Next.js (App Router), React, Vanilla CSS
 * **Backend:** Next.js Route Handlers (API), Node.js
-* **Database & ORM:** PostgreSQL, Prisma ORM
+* **Database & ORM:** MySQL, Prisma ORM
 * **Tooling:** ESLint, TypeScript, GitHub Actions (Automated Documentation Bot)
 
 ---
@@ -32,6 +33,7 @@ Built as part of an 8-hour Hackathon, this project focuses on robust business lo
 chanakya/
 ├── docs/                   # Product Requirements (PRD), API Docs, Status, Changelog
 ├── prisma/                 # Prisma Schema and DB Seeding scripts
+├── scratch/                # Verification and API testing scripts
 ├── src/
 │   ├── app/                # Next.js App Router (Frontend Pages & API Routes)
 │   │   ├── api/            # Backend API Endpoints (Vehicles, Drivers, Trips)
@@ -40,9 +42,15 @@ chanakya/
 │   │   ├── trips/          # Trip Dispatch & Live Board
 │   │   └── ...
 │   ├── components/         # Reusable React UI Components
-│   └── lib/                # Core Business Logic (transitions.ts) & Utilities
-├── scripts/                # Bash scripts for CI/CD and automation
-└── RULES.md                # Development guidelines and commit conventions
+│   ├── contexts/           # React context providers (AuthContext, DataContext)
+│   ├── lib/                # Core Business Logic (transitions.ts) & Services
+│   │   ├── auth.ts         # Session cookie authentication parsing
+│   │   ├── rbac.ts         # Role based permission matrices
+│   │   ├── services/       # Vehicle & Driver service layers
+│   │   └── utils/          # API response envelope and status normalization helpers
+│   └── types.ts            # Type definitions
+├── RULES.md                # Development guidelines and commit conventions
+└── package.json            # Scripts, dependencies, and configuration
 ```
 
 ---
@@ -52,7 +60,7 @@ chanakya/
 ### Prerequisites
 
 * Node.js (v18+)
-* PostgreSQL (Running locally or via Docker)
+* MySQL (Running locally or via Docker)
 
 ### Installation
 
@@ -70,10 +78,10 @@ chanakya/
    ```
 
 3. **Configure Environment Variables:**
-   Create a `.env` file in the root directory and add your PostgreSQL connection string:
+   Create a `.env` file in the root directory and add your MySQL connection string:
 
    ```env
-   DATABASE_URL="postgresql://user:password@localhost:5432/transitops?schema=public"
+   DATABASE_URL="mysql://user:password@localhost:3306/transitops"
    ```
 
 4. **Initialize the Database:**
@@ -84,13 +92,20 @@ chanakya/
    npx prisma generate
    ```
 
-5. **Start the Development Server:**
+5. **Seed the Database:**
+   Run the seeding script to populate the database with mock logs and users:
+
+   ```bash
+   npx prisma db seed
+   ```
+
+6. **Start the Development Server:**
 
    ```bash
    npm run dev
    ```
 
-6. **Open the App:**
+7. **Open the App:**
    Navigate to [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
@@ -99,7 +114,7 @@ chanakya/
 
 For full details on the product requirements, database schema, and API endpoints, refer to the `/docs` folder:
 
-* [Product Requirements Document (PRD)] (./docs/TransitOps%20—%20Final%20Product%20Requirements%20Document%20(.md)
+* [Product Requirements Document (PRD)](./docs/TransitOps_PRD.md)
 * [Backend API Documentation](./docs/API_Documentation.md)
 * [Implementation Status](./docs/Implementation_Status.md)
 
