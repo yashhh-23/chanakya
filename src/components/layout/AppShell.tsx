@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {useState, ReactNode, memo, useCallback, ChangeEvent, useEffect, useMemo} from 'react';
+import {useState, ReactNode, memo, useCallback, useEffect, useMemo} from 'react';
 import {motion, AnimatePresence} from 'motion/react';
 import {
   Menu,
@@ -42,7 +42,7 @@ export const AppShell = memo(function AppShell({
   setActiveTab,
   children,
 }: AppShellProps) {
-  const {user, logout, setRole} = useAuth();
+  const {user, logout} = useAuth();
   const {theme, toggleTheme} = useTheme();
   
   // Layout States
@@ -81,10 +81,6 @@ export const AppShell = memo(function AppShell({
       }
     }
   }, [user?.role, activeTab, setActiveTab, navItems]);
-
-  const handleRoleChange = useCallback((e: ChangeEvent<HTMLSelectElement>) => {
-    setRole(e.target.value as UserRole);
-  }, [setRole]);
 
   return (
     <div className="min-h-screen flex bg-bg-base text-text-base transition-colors duration-200">
@@ -295,23 +291,12 @@ export const AppShell = memo(function AppShell({
           {/* Right: Actions, search, notifications, themes, role changer */}
           <div className="flex items-center gap-3">
             
-            {/* Global Role Changer (extremely useful for demonstrating role-aware dashboards) */}
+            {/* Read-Only Role Badge */}
             {user && (
               <div className="hidden sm:flex items-center gap-2 border-r border-border-base pr-3 h-8">
-                <ShieldCheck size={14} className="text-text-muted" />
+                <ShieldCheck size={14} className="text-status-dispatched" />
                 <span className="text-[10px] font-bold text-text-muted uppercase">Role:</span>
-                <select
-                  value={user.role}
-                  onChange={handleRoleChange}
-                  className="rounded-md text-[11px] font-bold px-2 py-1 outline-none border cursor-pointer focus-visible:ring-1 focus-visible:ring-[var(--status-dispatched)]"
-                  style={{ backgroundColor: 'var(--input-bg)', color: 'var(--input-text)', borderColor: 'var(--input-border)', colorScheme: 'inherit' }}
-                  title="Switch Mock Role"
-                >
-                  <option value="FLEET_MANAGER" style={{ backgroundColor: 'var(--input-bg)', color: 'var(--input-text)' }}>Fleet Manager</option>
-                  <option value="DRIVER" style={{ backgroundColor: 'var(--input-bg)', color: 'var(--input-text)' }}>Driver</option>
-                  <option value="SAFETY_OFFICER" style={{ backgroundColor: 'var(--input-bg)', color: 'var(--input-text)' }}>Safety Officer</option>
-                  <option value="FINANCIAL_ANALYST" style={{ backgroundColor: 'var(--input-bg)', color: 'var(--input-text)' }}>Financial Analyst</option>
-                </select>
+                <RoleBadge role={user.role} className="bg-status-dispatched/10 text-status-dispatched border-status-dispatched/20 font-bold" />
               </div>
             )}
 
@@ -415,20 +400,10 @@ export const AppShell = memo(function AppShell({
                           <p className="text-[10px] text-text-muted truncate">{user.email}</p>
                         </div>
                         
-                        {/* Mobile Role selection */}
+                        {/* Mobile Role display */}
                         <div className="px-4 py-2 border-b border-border-base sm:hidden">
-                          <div className="text-[9px] font-bold text-text-muted uppercase mb-1">Switch Role</div>
-                          <select
-                            value={user.role}
-                            onChange={handleRoleChange}
-                            className="w-full rounded-md text-[11px] font-bold px-1.5 py-1 outline-none border cursor-pointer"
-                            style={{ backgroundColor: 'var(--input-bg)', color: 'var(--input-text)', borderColor: 'var(--input-border)', colorScheme: 'inherit' }}
-                          >
-                            <option value="FLEET_MANAGER" style={{ backgroundColor: 'var(--input-bg)', color: 'var(--input-text)' }}>Fleet Manager</option>
-                            <option value="DRIVER" style={{ backgroundColor: 'var(--input-bg)', color: 'var(--input-text)' }}>Driver</option>
-                            <option value="SAFETY_OFFICER" style={{ backgroundColor: 'var(--input-bg)', color: 'var(--input-text)' }}>Safety Officer</option>
-                            <option value="FINANCIAL_ANALYST" style={{ backgroundColor: 'var(--input-bg)', color: 'var(--input-text)' }}>Financial Analyst</option>
-                          </select>
+                          <div className="text-[9px] font-bold text-text-muted uppercase mb-1">Active Role</div>
+                          <RoleBadge role={user.role} className="bg-status-dispatched/10 text-status-dispatched border-status-dispatched/20 font-bold justify-center" />
                         </div>
 
                         <button
