@@ -1,5 +1,7 @@
-import { redirect } from "next/navigation";
+"use client";
 
-export default function Page() {
-  redirect("/");
+import App from "@/App";
+
+export default function FuelExpensesPage() {
+  return <App initialTab="fuel-expenses" />;
 }

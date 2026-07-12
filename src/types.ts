@@ -64,3 +64,44 @@ export interface Trip {
   eta?: string;
   blockingReason?: string;
 }
+
+export interface MaintenanceLog {
+  id: string;
+  vehicleId: string;
+  description: string;
+  cost: number;
+  startDate: string;
+  endDate?: string | null;
+  isOpen: boolean;
+  vehicle?: Vehicle;
+}
+
+export interface FuelLog {
+  id: string;
+  vehicleId: string;
+  liters: number;
+  cost: number;
+  date: string;
+  vehicle?: Vehicle;
+}
+
+export interface Expense {
+  id: string;
+  vehicleId: string;
+  category: string;
+  amount: number;
+  description: string;
+  date: string;
+  vehicle?: Vehicle;
+}
+
+export interface VehicleSummary {
+  vehicleId: string;
+  registrationNumber: string;
+  name: string;
+  fuelCost: number;
+  maintenanceCost: number;
+  otherCost: number;
+  totalOperationalCost: number;
+}
+

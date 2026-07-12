@@ -20,7 +20,8 @@ import {
   ChevronRight,
   ShieldCheck,
   MapPin,
-  Wallet,
+  Wrench,
+  Coins,
   BarChart3
 } from 'lucide-react';
 import {useAuth} from '../../contexts/AuthContext';
@@ -28,7 +29,7 @@ import {useTheme} from '../../contexts/ThemeContext';
 import {RoleBadge} from '../ui/StatusAndMetrics';
 import {UserRole} from '../../types';
 
-export type ActiveTab = 'dashboard' | 'vehicles' | 'drivers' | 'trips' | 'expenses' | 'analytics';
+export type ActiveTab = 'dashboard' | 'vehicles' | 'drivers' | 'trips' | 'maintenance' | 'fuel-expenses' | 'analytics';
 
 interface AppShellProps {
   activeTab: ActiveTab;
@@ -62,7 +63,8 @@ export const AppShell = memo(function AppShell({
     {id: 'trips' as ActiveTab, label: 'Trip Dispatcher', icon: MapPin},
     {id: 'vehicles' as ActiveTab, label: 'Vehicle Registry', icon: Truck},
     {id: 'drivers' as ActiveTab, label: 'Driver Directory', icon: Users},
-    {id: 'expenses' as ActiveTab, label: 'Fuel & Expenses', icon: Wallet},
+    {id: 'maintenance' as ActiveTab, label: 'Maintenance Log', icon: Wrench},
+    {id: 'fuel-expenses' as ActiveTab, label: 'Fuel & Expenses', icon: Coins},
     {id: 'analytics' as ActiveTab, label: 'Reports & Analytics', icon: BarChart3},
   ];
 

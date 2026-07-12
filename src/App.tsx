@@ -12,8 +12,9 @@ import {DashboardPage} from './features/dashboard/DashboardPage';
 import {VehicleRegistryPage} from './features/fleet/VehicleRegistryPage';
 import {DriverDirectoryPage} from './features/drivers/DriverDirectoryPage';
 import {TripDispatcherPage} from './features/trips/TripDispatcherPage';
-import FuelExpensesPage from './features/fuel-expenses/FuelExpensesPage';
-import AnalyticsPage from './features/analytics/AnalyticsPage';
+import {MaintenancePage} from './features/maintenance/MaintenancePage';
+import {FuelExpensesPage} from './features/fuel-expenses/FuelExpensesPage';
+import {AnalyticsPage} from './features/analytics/AnalyticsPage';
 import {AuthPage} from './features/auth/AuthPage';
 
 const AppContent = memo(function AppContent({ initialTab = 'dashboard' }: { initialTab?: ActiveTab }) {
@@ -44,7 +45,8 @@ const AppContent = memo(function AppContent({ initialTab = 'dashboard' }: { init
       {activeTab === 'vehicles' && <VehicleRegistryPage />}
       {activeTab === 'drivers' && <DriverDirectoryPage />}
       {activeTab === 'trips' && <TripDispatcherPage />}
-      {activeTab === 'expenses' && <FuelExpensesPage />}
+      {activeTab === 'maintenance' && <MaintenancePage />}
+      {activeTab === 'fuel-expenses' && <FuelExpensesPage />}
       {activeTab === 'analytics' && <AnalyticsPage />}
       <ToastContainer />
     </AppShell>

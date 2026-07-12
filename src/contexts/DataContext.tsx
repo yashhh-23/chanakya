@@ -1,7 +1,7 @@
 "use client";
 
 import {createContext, useContext, useState, ReactNode, useCallback, useMemo, useEffect} from 'react';
-import {Vehicle, Driver, Trip, VehicleStatus, DriverStatus, TripStatus} from '../types';
+import {Vehicle, Driver, Trip, VehicleStatus, DriverStatus, TripStatus, MaintenanceLog, FuelLog, Expense, VehicleSummary} from '../types';
 
 interface ApiFieldResult {
   success: boolean;
@@ -12,6 +12,10 @@ interface DataContextType {
   vehicles: Vehicle[];
   drivers: Driver[];
   trips: Trip[];
+  maintenanceLogs: MaintenanceLog[];
+  fuelLogs: FuelLog[];
+  expenses: Expense[];
+  vehicleSummaries: VehicleSummary[];
   loading: boolean;
   error: string | null;
   refreshData: () => Promise<void>;
@@ -23,6 +27,10 @@ interface DataContextType {
   cancelTrip: (id: string) => Promise<ApiFieldResult>;
   updateDriver: (id: string, driver: Partial<Driver>) => Promise<ApiFieldResult>;
   changeDriverStatus: (id: string, status: DriverStatus) => Promise<ApiFieldResult>;
+  addMaintenance: (log: Omit<MaintenanceLog, 'id' | 'startDate' | 'isOpen'> & { date?: string }) => Promise<ApiFieldResult>;
+  closeMaintenanceLog: (id: string) => Promise<ApiFieldResult>;
+  addFuelLog: (log: Omit<FuelLog, 'id'>) => Promise<ApiFieldResult>;
+  addExpense: (expense: Omit<Expense, 'id'>) => Promise<ApiFieldResult>;
   stats: {
     activeFleetCount: number;
     driversOnDutyCount: number;
@@ -139,6 +147,47 @@ const mapTrip = (trip: ApiTrip): Trip => ({
   driver: trip.driver ? mapDriver(trip.driver) : undefined,
 });
 
+const mapMaintenanceLog = (log: any): MaintenanceLog => ({
+  id: log.id,
+  vehicleId: log.vehicleId,
+  description: log.description,
+  cost: Number(log.cost),
+  startDate: new Date(log.startDate).toISOString().slice(0, 10),
+  endDate: log.endDate ? new Date(log.endDate).toISOString().slice(0, 10) : null,
+  isOpen: log.isOpen,
+  vehicle: log.vehicle ? mapVehicle(log.vehicle) : undefined,
+});
+
+const mapFuelLog = (fl: any): FuelLog => ({
+  id: fl.id,
+  vehicleId: fl.vehicleId,
+  liters: Number(fl.liters),
+  cost: Number(fl.cost),
+  date: new Date(fl.date).toISOString().slice(0, 10),
+  vehicle: fl.vehicle ? mapVehicle(fl.vehicle) : undefined,
+});
+
+const mapExpense = (exp: any): Expense => ({
+  id: exp.id,
+  vehicleId: exp.vehicleId,
+  category: exp.category,
+  amount: Number(exp.amount),
+  description: exp.description,
+  date: new Date(exp.date).toISOString().slice(0, 10),
+  vehicle: exp.vehicle ? mapVehicle(exp.vehicle) : undefined,
+});
+
+const mapVehicleSummary = (s: any): VehicleSummary => ({
+  vehicleId: s.vehicleId,
+  registrationNumber: s.registrationNumber,
+  name: s.name,
+  fuelCost: Number(s.fuelCost),
+  maintenanceCost: Number(s.maintenanceCost),
+  otherCost: Number(s.otherCost),
+  totalOperationalCost: Number(s.totalOperationalCost),
+});
+
+
 async function readJson<T>(url: string): Promise<T> {
   const response = await fetch(url, {cache: 'no-store'});
   const payload = await response.json().catch(() => null);
@@ -159,6 +208,10 @@ export function DataProvider({children}: {children: ReactNode}) {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [trips, setTrips] = useState<Trip[]>([]);
+  const [maintenanceLogs, setMaintenanceLogs] = useState<MaintenanceLog[]>([]);
+  const [fuelLogs, setFuelLogs] = useState<FuelLog[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [vehicleSummaries, setVehicleSummaries] = useState<VehicleSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -167,15 +220,21 @@ export function DataProvider({children}: {children: ReactNode}) {
     setError(null);
 
     try {
-      const [vehicleRows, driverRows, tripRows] = await Promise.all([
+      const [vehicleRows, driverRows, tripRows, maintenanceRows, fuelExpenseRes] = await Promise.all([
         readJson<ApiVehicle[]>('/api/vehicles'),
         readJson<ApiDriver[]>('/api/drivers'),
         readJson<ApiTrip[]>('/api/trips'),
+        readJson<any[]>('/api/maintenance'),
+        readJson<any>('/api/fuel-expenses'),
       ]);
 
       setVehicles(vehicleRows.map(mapVehicle));
       setDrivers(driverRows.map(mapDriver));
       setTrips(tripRows.map(mapTrip));
+      setMaintenanceLogs((maintenanceRows || []).map(mapMaintenanceLog));
+      setFuelLogs((fuelExpenseRes?.fuelLogs || []).map(mapFuelLog));
+      setExpenses((fuelExpenseRes?.expenses || []).map(mapExpense));
+      setVehicleSummaries((fuelExpenseRes?.vehicleSummaries || []).map(mapVehicleSummary));
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unable to load operations data.';
       setError(message);
@@ -353,6 +412,97 @@ export function DataProvider({children}: {children: ReactNode}) {
       return {success: false, error: {field: 'status', message: err instanceof Error ? err.message : 'Failed to change status.'}};
     }
   }, []);
+
+  const addMaintenance = useCallback(async (newMaint: Omit<MaintenanceLog, 'id' | 'startDate' | 'isOpen'> & { date?: string }): Promise<ApiFieldResult> => {
+    try {
+      const response = await fetch('/api/maintenance', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(newMaint),
+      });
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        return {success: false, error: {field: 'description', message: payload?.error || 'Maintenance logging failed.'}};
+      }
+      
+      const logData = payload?.success && payload?.data ? payload.data : payload;
+      setMaintenanceLogs((prev) => [mapMaintenanceLog(logData), ...prev]);
+      await refreshData();
+      return {success: true};
+    } catch (err) {
+      return {success: false, error: {field: 'description', message: err instanceof Error ? err.message : 'Maintenance logging failed.'}};
+    }
+  }, [refreshData]);
+
+  const closeMaintenanceLog = useCallback(async (id: string): Promise<ApiFieldResult> => {
+    try {
+      const response = await fetch(`/api/maintenance/${id}/close`, {
+        method: 'POST',
+      });
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        return {success: false, error: {field: 'status', message: payload?.error || 'Failed to close maintenance.'}};
+      }
+      
+      const logData = payload?.success && payload?.data ? payload.data : payload;
+      setMaintenanceLogs((prev) => prev.map((log) => log.id === id ? mapMaintenanceLog(logData) : log));
+      await refreshData();
+      return {success: true};
+    } catch (err) {
+      return {success: false, error: {field: 'status', message: err instanceof Error ? err.message : 'Failed to close maintenance.'}};
+    }
+  }, [refreshData]);
+
+  const addFuelLog = useCallback(async (newFuel: Omit<FuelLog, 'id'>): Promise<ApiFieldResult> => {
+    try {
+      const response = await fetch('/api/fuel-expenses', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          ...newFuel,
+          type: 'Fuel',
+          amount: newFuel.cost,
+        }),
+      });
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        return {success: false, error: {field: 'liters', message: payload?.error || 'Fuel logging failed.'}};
+      }
+      
+      await refreshData();
+      return {success: true};
+    } catch (err) {
+      return {success: false, error: {field: 'liters', message: err instanceof Error ? err.message : 'Fuel logging failed.'}};
+    }
+  }, [refreshData]);
+
+  const addExpense = useCallback(async (newExpense: Omit<Expense, 'id'>): Promise<ApiFieldResult> => {
+    try {
+      const response = await fetch('/api/fuel-expenses', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          ...newExpense,
+          type: 'Expense',
+          amount: newExpense.amount,
+        }),
+      });
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        return {success: false, error: {field: 'amount', message: payload?.error || 'Expense logging failed.'}};
+      }
+      
+      await refreshData();
+      return {success: true};
+    } catch (err) {
+      return {success: false, error: {field: 'amount', message: err instanceof Error ? err.message : 'Expense logging failed.'}};
+    }
+  }, [refreshData]);
+
   const stats = useMemo(() => {
     const activeFleetCount = vehicles.filter((v) => v.status !== 'RETIRED').length;
     const driversOnDutyCount = drivers.filter((d) => d.status === 'AVAILABLE' || d.status === 'ON_TRIP').length;
@@ -374,6 +524,10 @@ export function DataProvider({children}: {children: ReactNode}) {
     vehicles,
     drivers,
     trips,
+    maintenanceLogs,
+    fuelLogs,
+    expenses,
+    vehicleSummaries,
     loading,
     error,
     refreshData,
@@ -385,8 +539,36 @@ export function DataProvider({children}: {children: ReactNode}) {
     cancelTrip,
     updateDriver,
     changeDriverStatus,
+    addMaintenance,
+    closeMaintenanceLog,
+    addFuelLog,
+    addExpense,
     stats,
-  }), [vehicles, drivers, trips, loading, error, refreshData, addVehicle, addDriver, addTrip, dispatchTrip, completeTrip, cancelTrip, updateDriver, changeDriverStatus, stats]);
+  }), [
+    vehicles,
+    drivers,
+    trips,
+    maintenanceLogs,
+    fuelLogs,
+    expenses,
+    vehicleSummaries,
+    loading,
+    error,
+    refreshData,
+    addVehicle,
+    addDriver,
+    addTrip,
+    dispatchTrip,
+    completeTrip,
+    cancelTrip,
+    updateDriver,
+    changeDriverStatus,
+    addMaintenance,
+    closeMaintenanceLog,
+    addFuelLog,
+    addExpense,
+    stats,
+  ]);
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 }

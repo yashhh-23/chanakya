@@ -113,3 +113,56 @@ export const tripSchema = z.object({
 });
 
 export type TripFormValues = z.infer<typeof tripSchema>;
+
+// ==========================================
+// Maintenance Validation Schema
+// ==========================================
+export const maintenanceSchema = z.object({
+  vehicleId: z.string().min(1, 'Vehicle selection is required'),
+  description: z.string().min(1, 'Service description is required').max(200, 'Description is too long'),
+  cost: z.coerce.number().gt(0, 'Cost must be a positive number'),
+  date: z.string().min(1, 'Date is required').refine((val) => {
+    const selectedDate = new Date(val);
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    return selectedDate <= today;
+  }, 'Date cannot be in the future'),
+});
+
+export type MaintenanceFormValues = z.infer<typeof maintenanceSchema>;
+
+// ==========================================
+// Fuel Log Validation Schema
+// ==========================================
+export const fuelLogSchema = z.object({
+  vehicleId: z.string().min(1, 'Vehicle selection is required'),
+  liters: z.coerce.number().gt(0, 'Liters must be a positive number'),
+  cost: z.coerce.number().gt(0, 'Cost must be a positive number'),
+  date: z.string().min(1, 'Date is required').refine((val) => {
+    const selectedDate = new Date(val);
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    return selectedDate <= today;
+  }, 'Date cannot be in the future'),
+});
+
+export type FuelLogFormValues = z.infer<typeof fuelLogSchema>;
+
+// ==========================================
+// Expense Validation Schema
+// ==========================================
+export const expenseSchema = z.object({
+  vehicleId: z.string().min(1, 'Vehicle selection is required'),
+  category: z.enum(['Fuel', 'Maintenance', 'Toll', 'Other']),
+  amount: z.coerce.number().gt(0, 'Amount must be a positive number'),
+  description: z.string().min(1, 'Description is required').max(200, 'Description is too long'),
+  date: z.string().min(1, 'Date is required').refine((val) => {
+    const selectedDate = new Date(val);
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    return selectedDate <= today;
+  }, 'Date cannot be in the future'),
+});
+
+export type ExpenseFormValues = z.infer<typeof expenseSchema>;
+

@@ -1,594 +1,571 @@
-'use client'
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
-import React, { useEffect, useState, useCallback } from 'react'
-import { ValidationError } from '@/components/ui/ValidationError'
+import { useState, useMemo, useCallback, memo } from 'react';
+import { useData } from '../../contexts/DataContext';
+import { useToast } from '../../contexts/ToastContext';
+import { DataTable, Column } from '../../components/data-table/DataTable';
+import { EntityForm, ApiFieldError } from '../../components/forms/EntityForm';
+import { FormRow, TextInput, DateInput, SelectBox } from '../../components/ui/FormControls';
+import { fuelLogSchema, expenseSchema, FuelLogFormValues, ExpenseFormValues } from '../../schemas/validation';
+import { FuelLog, Expense, VehicleSummary } from '../../types';
+import { Fuel, Coins, RefreshCw, Calculator, ClipboardList, AlertCircle, Calendar } from 'lucide-react';
+import { SpinnerCircular } from '../../components/ui/StatusAndMetrics';
 
-interface VehicleOption {
-  id: string
-  registrationNumber: string
-  name: string
-}
+export const FuelExpensesPage = memo(function FuelExpensesPage() {
+  const {
+    fuelLogs,
+    expenses,
+    vehicles,
+    vehicleSummaries,
+    loading,
+    error,
+    addFuelLog,
+    addExpense,
+    refreshData,
+  } = useData();
+  const { addToast } = useToast();
 
-interface FuelLogItem {
-  id: string
-  liters: number
-  cost: number
-  date: string
-  vehicle: VehicleOption
-}
+  const [lastRefreshed, setLastRefreshed] = useState<string>(new Date().toLocaleTimeString());
+  const [fuelApiErrors, setFuelApiErrors] = useState<ApiFieldError[]>([]);
+  const [expenseApiErrors, setExpenseApiErrors] = useState<ApiFieldError[]>([]);
 
-interface ExpenseItem {
-  id: string
-  category: string
-  amount: number
-  description: string
-  date: string
-  vehicle: VehicleOption
-}
+  // Filter States
+  const [fuelVehicleFilter, setFuelVehicleFilter] = useState<string>('ALL');
+  const [expenseVehicleFilter, setExpenseVehicleFilter] = useState<string>('ALL');
+  const [expenseCategoryFilter, setExpenseCategoryFilter] = useState<string>('ALL');
+  const [fuelDateFilter, setFuelDateFilter] = useState<string>('');
 
-interface VehicleSummaryItem {
-  vehicleId: string
-  registrationNumber: string
-  name: string
-  fuelCost: number
-  maintenanceCost: number
-  otherCost: number
-  totalOperationalCost: number
-}
+  const handleRefresh = useCallback(async () => {
+    await refreshData();
+    setLastRefreshed(new Date().toLocaleTimeString());
+  }, [refreshData]);
 
-export default function FuelExpensesPage() {
-  const [fuelLogs, setFuelLogs] = useState<FuelLogItem[]>([])
-  const [expenses, setExpenses] = useState<ExpenseItem[]>([])
-  const [vehicles, setVehicles] = useState<VehicleOption[]>([])
-  const [summaries, setSummaries] = useState<VehicleSummaryItem[]>([])
+  // Handle Fuel Log Submit
+  const handleFuelSubmit = useCallback(async (values: FuelLogFormValues, { reset }: any) => {
+    setFuelApiErrors([]);
+    const result = await addFuelLog({
+      vehicleId: values.vehicleId,
+      liters: Number(values.liters),
+      cost: Number(values.cost),
+      date: values.date,
+    });
 
-  // Filters
-  const [vehicleFilter, setVehicleFilter] = useState('ALL')
-  const [categoryFilter, setCategoryFilter] = useState('ALL')
-  const [sortBy, setSortBy] = useState<'date' | 'cost'>('date')
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
-
-  // Forms State
-  const [fuelForm, setFuelForm] = useState({
-    vehicleId: '',
-    liters: '',
-    amount: '',
-    date: new Date().toISOString().split('T')[0],
-  })
-  const [fuelError, setFuelError] = useState<string | null>(null)
-  const [isSubmittingFuel, setIsSubmittingFuel] = useState(false)
-
-  const [expForm, setExpForm] = useState({
-    vehicleId: '',
-    category: 'Toll',
-    amount: '',
-    description: '',
-    date: new Date().toISOString().split('T')[0],
-  })
-  const [expError, setExpError] = useState<string | null>(null)
-  const [isSubmittingExp, setIsSubmittingExp] = useState(false)
-
-  const fetchData = useCallback(async () => {
-    try {
-      const params = new URLSearchParams()
-      if (vehicleFilter !== 'ALL') params.append('vehicleId', vehicleFilter)
-      if (categoryFilter !== 'ALL') params.append('category', categoryFilter)
-
-      const res = await fetch(`/api/fuel-expenses?${params.toString()}`)
-      if (!res.ok) throw new Error('Failed to fetch fuel & expenses')
-      const data = await res.json()
-      if (data.success) {
-        setFuelLogs(data.fuelLogs || [])
-        setExpenses(data.expenses || [])
-        setVehicles(data.vehicles || [])
-        setSummaries(data.vehicleSummaries || [])
-        if (!fuelForm.vehicleId && data.vehicles?.length > 0) {
-          setFuelForm((prev) => ({ ...prev, vehicleId: data.vehicles[0].id }))
-          setExpForm((prev) => ({ ...prev, vehicleId: data.vehicles[0].id }))
-        }
-      }
-    } catch (err) {
-      console.error('Error loading fuel expenses:', err)
+    if (result.success) {
+      addToast('Fuel Logged', 'Fuel intake log recorded and operational expense auto-created.', 'success');
+      reset();
+      setLastRefreshed(new Date().toLocaleTimeString());
+    } else if (result.error) {
+      setFuelApiErrors([result.error]);
+      addToast('Fuel Logging Failed', result.error.message, 'error');
     }
-  }, [vehicleFilter, categoryFilter, fuelForm.vehicleId])
+  }, [addFuelLog, addToast]);
 
-  useEffect(() => {
-    fetchData()
-  }, [fetchData])
+  // Handle Other Expense Submit
+  const handleExpenseSubmit = useCallback(async (values: ExpenseFormValues, { reset }: any) => {
+    setExpenseApiErrors([]);
+    const result = await addExpense({
+      vehicleId: values.vehicleId,
+      category: values.category,
+      amount: Number(values.amount),
+      description: values.description.trim(),
+      date: values.date,
+    });
 
-  // Sorting helper
-  const sortList = <T extends { date: string; cost?: number; amount?: number }>(
-    list: T[]
-  ) => {
-    return [...list].sort((a, b) => {
-      const valA = sortBy === 'date' ? new Date(a.date).getTime() : a.cost ?? a.amount ?? 0
-      const valB = sortBy === 'date' ? new Date(b.date).getTime() : b.cost ?? b.amount ?? 0
-      return sortOrder === 'asc' ? valA - valB : valB - valA
-    })
+    if (result.success) {
+      addToast('Expense Logged', 'Operational cost expense record created successfully.', 'success');
+      reset();
+      setLastRefreshed(new Date().toLocaleTimeString());
+    } else if (result.error) {
+      setExpenseApiErrors([result.error]);
+      addToast('Expense Logging Failed', result.error.message, 'error');
+    }
+  }, [addExpense, addToast]);
+
+  // Filtered Fuel Logs
+  const filteredFuelLogs = useMemo(() => {
+    return fuelLogs.filter((fl) => {
+      const matchVehicle = fuelVehicleFilter === 'ALL' || fl.vehicleId === fuelVehicleFilter;
+      const matchDate = !fuelDateFilter || fl.date === fuelDateFilter;
+      return matchVehicle && matchDate;
+    });
+  }, [fuelLogs, fuelVehicleFilter, fuelDateFilter]);
+
+  // Filtered Expenses
+  const filteredExpenses = useMemo(() => {
+    return expenses.filter((exp) => {
+      const matchVehicle = expenseVehicleFilter === 'ALL' || exp.vehicleId === expenseVehicleFilter;
+      const matchCategory = expenseCategoryFilter === 'ALL' || exp.category === expenseCategoryFilter;
+      return matchVehicle && matchCategory;
+    });
+  }, [expenses, expenseVehicleFilter, expenseCategoryFilter]);
+
+  // Columns for Fuel Logs Table
+  const fuelColumns: Column<FuelLog>[] = useMemo(
+    () => [
+      {
+        id: 'vehicle',
+        header: 'Vehicle',
+        accessorKey: 'vehicleId',
+        sortable: true,
+        cell: (row) => (
+          <div className="flex flex-col">
+            <span className="font-bold text-text-base">{row.vehicle?.name || 'Unknown'}</span>
+            <span className="font-mono text-[9px] text-text-muted">{row.vehicle?.regNumber || 'N/A'}</span>
+          </div>
+        ),
+      },
+      {
+        id: 'liters',
+        header: 'Intake (L)',
+        accessorKey: 'liters',
+        sortable: true,
+        cell: (row) => <span className="font-mono">{row.liters.toFixed(1)} L</span>,
+      },
+      {
+        id: 'cost',
+        header: 'Cost',
+        accessorKey: 'cost',
+        sortable: true,
+        cell: (row) => <span className="font-mono font-bold">${row.cost.toFixed(2)}</span>,
+      },
+      {
+        id: 'date',
+        header: 'Date',
+        accessorKey: 'date',
+        sortable: true,
+        cell: (row) => <span className="font-mono text-xs">{row.date}</span>,
+      },
+    ],
+    []
+  );
+
+  // Columns for Expenses Table
+  const expenseColumns: Column<Expense>[] = useMemo(
+    () => [
+      {
+        id: 'vehicle',
+        header: 'Vehicle',
+        accessorKey: 'vehicleId',
+        sortable: true,
+        cell: (row) => (
+          <div className="flex flex-col">
+            <span className="font-bold text-text-base">{row.vehicle?.name || 'Unknown'}</span>
+            <span className="font-mono text-[9px] text-text-muted">{row.vehicle?.regNumber || 'N/A'}</span>
+          </div>
+        ),
+      },
+      {
+        id: 'category',
+        header: 'Category',
+        accessorKey: 'category',
+        sortable: true,
+        cell: (row) => {
+          const colors: Record<string, string> = {
+            Fuel: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+            Maintenance: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+            Toll: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+            Other: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20',
+          };
+          return (
+            <span className={`inline-flex px-2 py-0.5 rounded-full text-[9px] font-extrabold border ${colors[row.category] || colors.Other}`}>
+              {row.category.toUpperCase()}
+            </span>
+          );
+        },
+      },
+      {
+        id: 'amount',
+        header: 'Cost',
+        accessorKey: 'amount',
+        sortable: true,
+        cell: (row) => <span className="font-mono font-bold">${row.amount.toFixed(2)}</span>,
+      },
+      {
+        id: 'description',
+        header: 'Description',
+        accessorKey: 'description',
+        sortable: true,
+      },
+      {
+        id: 'date',
+        header: 'Date',
+        accessorKey: 'date',
+        sortable: true,
+        cell: (row) => <span className="font-mono text-xs">{row.date}</span>,
+      },
+    ],
+    []
+  );
+
+  // Columns for Vehicle Cost Summary Table
+  const summaryColumns: Column<VehicleSummary>[] = useMemo(
+    () => [
+      {
+        id: 'vehicle',
+        header: 'Vehicle name',
+        accessorKey: 'name',
+        sortable: true,
+        cell: (row) => (
+          <div>
+            <span className="font-bold text-text-base block">{row.name}</span>
+            <span className="font-mono text-[10px] text-text-muted uppercase tracking-wider">{row.registrationNumber}</span>
+          </div>
+        ),
+      },
+      {
+        id: 'fuelCost',
+        header: 'Fuel Costs',
+        accessorKey: 'fuelCost',
+        sortable: true,
+        cell: (row) => <span className="font-mono">${row.fuelCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>,
+      },
+      {
+        id: 'maintenanceCost',
+        header: 'Maintenance Costs',
+        accessorKey: 'maintenanceCost',
+        sortable: true,
+        cell: (row) => <span className="font-mono">${row.maintenanceCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>,
+      },
+      {
+        id: 'otherCost',
+        header: 'Tolls & Other',
+        accessorKey: 'otherCost',
+        sortable: true,
+        cell: (row) => <span className="font-mono">${row.otherCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>,
+      },
+      {
+        id: 'totalOperationalCost',
+        header: 'Total Operational Cost',
+        accessorKey: 'totalOperationalCost',
+        sortable: true,
+        cell: (row) => (
+          <span className="font-mono font-bold text-emerald-400">
+            ${row.totalOperationalCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+          </span>
+        ),
+      },
+    ],
+    []
+  );
+
+  if (loading && fuelLogs.length === 0) {
+    return (
+      <div className="h-[400px] flex flex-col items-center justify-center gap-3">
+        <SpinnerCircular size="lg" />
+        <p className="text-sm text-text-muted">Loading fuel logs and expenses...</p>
+      </div>
+    );
   }
 
-  const handleFuelSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setFuelError(null)
-
-    if (!fuelForm.vehicleId) {
-      setFuelError('Please select a vehicle')
-      return
-    }
-    const liters = parseFloat(fuelForm.liters)
-    const amount = parseFloat(fuelForm.amount)
-    if (isNaN(liters) || liters <= 0) {
-      setFuelError('Liters must be a positive number')
-      return
-    }
-    if (isNaN(amount) || amount <= 0) {
-      setFuelError('Cost must be a positive number')
-      return
-    }
-
-    setIsSubmittingFuel(true)
-    try {
-      const res = await fetch('/api/fuel-expenses', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'Fuel',
-          vehicleId: fuelForm.vehicleId,
-          liters: fuelForm.liters,
-          amount: fuelForm.amount,
-          date: fuelForm.date,
-        }),
-      })
-      const data = await res.json()
-      if (!res.ok || !data.success) {
-        setFuelError(data.error || 'Failed to submit fuel log')
-      } else {
-        setFuelForm({
-          ...fuelForm,
-          liters: '',
-          amount: '',
-        })
-        fetchData()
-      }
-    } catch (err: any) {
-      setFuelError(err.message)
-    } finally {
-      setIsSubmittingFuel(false)
-    }
-  }
-
-  const handleExpSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setExpError(null)
-
-    if (!expForm.vehicleId) {
-      setExpError('Please select a vehicle')
-      return
-    }
-    const amount = parseFloat(expForm.amount)
-    if (isNaN(amount) || amount <= 0) {
-      setExpError('Cost must be a positive number')
-      return
-    }
-
-    setIsSubmittingExp(true)
-    try {
-      const res = await fetch('/api/fuel-expenses', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'Expense',
-          vehicleId: expForm.vehicleId,
-          category: expForm.category,
-          amount: expForm.amount,
-          description: expForm.description || expForm.category,
-          date: expForm.date,
-        }),
-      })
-      const data = await res.json()
-      if (!res.ok || !data.success) {
-        setExpError(data.error || 'Failed to record expense')
-      } else {
-        setExpForm({
-          ...expForm,
-          amount: '',
-          description: '',
-        })
-        fetchData()
-      }
-    } catch (err: any) {
-      setExpError(err.message)
-    } finally {
-      setIsSubmittingExp(false)
-    }
+  if (error && fuelLogs.length === 0) {
+    return (
+      <div className="h-[400px] flex flex-col items-center justify-center gap-3 border border-red-500/20 bg-red-500/5 rounded-xl p-6">
+        <AlertCircle size={32} className="text-red-500" />
+        <h3 className="text-sm font-bold text-text-base">System Error</h3>
+        <p className="text-xs text-text-muted text-center max-w-sm">{error}</p>
+        <button
+          onClick={handleRefresh}
+          className="mt-2 px-3 py-1.5 text-xs font-bold bg-bg-surface border border-border-base text-text-base rounded-lg hover:bg-bg-base/40 flex items-center gap-1.5"
+        >
+          <RefreshCw size={12} />
+          <span>Retry Connection</span>
+        </button>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="space-y-8 select-none">
+      {/* Header Panel */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight font-display text-text-base flex items-center gap-2">
-            ⛽ Fuel & Operational Expenses
-          </h1>
-          <p className="text-sm text-text-muted mt-1">
-            Log fuel records and general expenses to track total operational expenditure.
+          <h2 className="text-xl font-extrabold tracking-tight font-display text-text-base">
+            Fuel & Expenses Tracking
+          </h2>
+          <p className="text-xs text-text-muted mt-0.5">
+            Log diesel consumption, manage operational expense sheets, and track vehicle costs.
           </p>
+        </div>
+
+        <div className="flex items-center gap-2.5 w-full sm:w-auto">
+          <span className="text-[10px] font-bold text-text-muted mr-1.5">
+            Last updated: {lastRefreshed}
+          </span>
+          <button
+            onClick={handleRefresh}
+            className="p-2 border border-border-base bg-bg-surface hover:bg-bg-base/50 text-text-muted rounded-lg transition-all"
+            title="Refresh Data"
+          >
+            <RefreshCw size={16} />
+          </button>
         </div>
       </div>
 
-      <div className="space-y-8">
-          {/* Controls Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-zinc-900/80 border border-zinc-800">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <label className="text-xs text-zinc-400 font-medium">Vehicle</label>
+      {/* Two-Panel Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        {/* Left Panel: Fuel Log */}
+        <div className="space-y-6">
+          <div className="bg-bg-card border border-border-base rounded-xl p-5 shadow-xs">
+            <div className="flex items-center gap-2 mb-4">
+              <Fuel className="text-emerald-500" size={18} />
+              <h3 className="text-sm font-extrabold font-display text-text-base">Log Fuel Intake</h3>
+            </div>
+            
+            <EntityForm<FuelLogFormValues>
+              schema={fuelLogSchema}
+              onSubmit={handleFuelSubmit}
+              externalErrors={fuelApiErrors}
+              defaultValues={{
+                vehicleId: '',
+                liters: '' as any,
+                cost: '' as any,
+                date: new Date().toISOString().slice(0, 10),
+              }}
+            >
+              {({ register, formState: { errors, isSubmitting } }) => (
+                <div className="space-y-4">
+                  <FormRow label="Fleet Vehicle" error={errors.vehicleId?.message} required>
+                    <SelectBox
+                      {...register('vehicleId')}
+                      error={!!errors.vehicleId}
+                      options={[
+                        { value: '', label: 'Select vehicle...' },
+                        ...vehicles.map((v) => ({
+                          value: v.id || '',
+                          label: `${v.name} (${v.regNumber})`,
+                        })),
+                      ]}
+                    />
+                  </FormRow>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+                    <FormRow label="Liters (L)" error={errors.liters?.message} required>
+                      <TextInput type="number" step="0.1" {...register('liters')} placeholder="e.g. 50.0" error={!!errors.liters} />
+                    </FormRow>
+                    <FormRow label="Total Cost ($)" error={errors.cost?.message} required>
+                      <TextInput type="number" step="0.01" {...register('cost')} placeholder="e.g. 120.00" error={!!errors.cost} />
+                    </FormRow>
+                  </div>
+
+                  <FormRow label="Intake Date" error={errors.date?.message} required>
+                    <DateInput {...register('date')} error={!!errors.date} />
+                  </FormRow>
+
+                  <div className="flex justify-end pt-2 border-t border-border-base/40">
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="px-4 py-2 text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-500 rounded-lg shadow-sm transition-all"
+                    >
+                      {isSubmitting ? 'Logging...' : 'Submit Fuel Log'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </EntityForm>
+          </div>
+
+          {/* Fuel Logs Table */}
+          <div className="space-y-4 bg-bg-card border border-border-base rounded-xl p-5 shadow-xs">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-border-base/50">
+              <h4 className="text-xs font-bold uppercase text-text-muted">Fuel History</h4>
+              
+              <div className="flex items-center gap-2 w-full sm:w-auto">
                 <select
-                  value={vehicleFilter}
-                  onChange={(e) => setVehicleFilter(e.target.value)}
-                  className="rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-200 focus:outline-none"
+                  value={fuelVehicleFilter}
+                  onChange={(e) => setFuelVehicleFilter(e.target.value)}
+                  className="h-8 px-2 bg-bg-surface border border-border-base rounded-lg text-[10px] font-bold text-text-base cursor-pointer"
                 >
                   <option value="ALL">All Vehicles</option>
                   {vehicles.map((v) => (
-                    <option key={v.id} value={v.id}>
-                      {v.registrationNumber} ({v.name})
-                    </option>
+                    <option key={v.id} value={v.id}>{v.regNumber}</option>
                   ))}
                 </select>
-              </div>
 
-              <div className="flex items-center gap-2">
-                <label className="text-xs text-zinc-400 font-medium">Category</label>
+                <input
+                  type="date"
+                  value={fuelDateFilter}
+                  onChange={(e) => setFuelDateFilter(e.target.value)}
+                  className="h-8 px-2 bg-bg-surface border border-border-base rounded-lg text-[10px] font-bold text-text-base cursor-pointer"
+                />
+              </div>
+            </div>
+
+            <div className="h-[280px]">
+              {filteredFuelLogs.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-center p-4">
+                  <ClipboardList size={24} className="text-text-muted/40 mb-1" />
+                  <p className="text-[11px] font-bold text-text-muted">No Fuel Logs registered.</p>
+                </div>
+              ) : (
+                <DataTable<FuelLog>
+                  columns={fuelColumns}
+                  data={filteredFuelLogs}
+                  searchKey="vehicleId"
+                  searchPlaceholder="Filter..."
+                  pageSize={5}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Panel: Other Expenses */}
+        <div className="space-y-6">
+          <div className="bg-bg-card border border-border-base rounded-xl p-5 shadow-xs">
+            <div className="flex items-center gap-2 mb-4">
+              <Coins className="text-blue-500" size={18} />
+              <h3 className="text-sm font-extrabold font-display text-text-base">Log Other Expense</h3>
+            </div>
+
+            <EntityForm<ExpenseFormValues>
+              schema={expenseSchema}
+              onSubmit={handleExpenseSubmit}
+              externalErrors={expenseApiErrors}
+              defaultValues={{
+                vehicleId: '',
+                category: 'Toll',
+                amount: '' as any,
+                description: '',
+                date: new Date().toISOString().slice(0, 10),
+              }}
+            >
+              {({ register, formState: { errors, isSubmitting } }) => (
+                <div className="space-y-4">
+                  <FormRow label="Fleet Vehicle" error={errors.vehicleId?.message} required>
+                    <SelectBox
+                      {...register('vehicleId')}
+                      error={!!errors.vehicleId}
+                      options={[
+                        { value: '', label: 'Select vehicle...' },
+                        ...vehicles.map((v) => ({
+                          value: v.id || '',
+                          label: `${v.name} (${v.regNumber})`,
+                        })),
+                      ]}
+                    />
+                  </FormRow>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+                    <FormRow label="Cost Category" error={errors.category?.message} required>
+                      <SelectBox
+                        {...register('category')}
+                        error={!!errors.category}
+                        options={[
+                          { value: 'Toll', label: 'Toll & Transit Fees' },
+                          { value: 'Maintenance', label: 'Maintenance Log' },
+                          { value: 'Other', label: 'Other Expense' },
+                        ]}
+                      />
+                    </FormRow>
+                    <FormRow label="Amount ($)" error={errors.amount?.message} required>
+                      <TextInput type="number" step="0.01" {...register('amount')} placeholder="e.g. 45.00" error={!!errors.amount} />
+                    </FormRow>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+                    <FormRow label="Description" error={errors.description?.message} required>
+                      <TextInput {...register('description')} placeholder="e.g. Toll booth fee" error={!!errors.description} />
+                    </FormRow>
+                    <FormRow label="Expense Date" error={errors.date?.message} required>
+                      <DateInput {...register('date')} error={!!errors.date} />
+                    </FormRow>
+                  </div>
+
+                  <div className="flex justify-end pt-2 border-t border-border-base/40">
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="px-4 py-2 text-xs font-bold bg-blue-600 text-white hover:bg-blue-500 rounded-lg shadow-sm transition-all"
+                    >
+                      {isSubmitting ? 'Logging...' : 'Submit Expense Log'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </EntityForm>
+          </div>
+
+          {/* Expenses Table */}
+          <div className="space-y-4 bg-bg-card border border-border-base rounded-xl p-5 shadow-xs">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-border-base/50">
+              <h4 className="text-xs font-bold uppercase text-text-muted">Expense Logs</h4>
+
+              <div className="flex items-center gap-2 w-full sm:w-auto">
                 <select
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value)}
-                  className="rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-200 focus:outline-none"
+                  value={expenseVehicleFilter}
+                  onChange={(e) => setExpenseVehicleFilter(e.target.value)}
+                  className="h-8 px-2 bg-bg-surface border border-border-base rounded-lg text-[10px] font-bold text-text-base cursor-pointer"
+                >
+                  <option value="ALL">All Vehicles</option>
+                  {vehicles.map((v) => (
+                    <option key={v.id} value={v.id}>{v.regNumber}</option>
+                  ))}
+                </select>
+
+                <select
+                  value={expenseCategoryFilter}
+                  onChange={(e) => setExpenseCategoryFilter(e.target.value)}
+                  className="h-8 px-2 bg-bg-surface border border-border-base rounded-lg text-[10px] font-bold text-text-base cursor-pointer"
                 >
                   <option value="ALL">All Categories</option>
                   <option value="Fuel">Fuel</option>
-                  <option value="Toll">Toll</option>
                   <option value="Maintenance">Maintenance</option>
+                  <option value="Toll">Tolls</option>
                   <option value="Other">Other</option>
                 </select>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <label className="text-xs text-zinc-400 font-medium">Sort By</label>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
-                className="rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-200"
-              >
-                <option value="date">Date</option>
-                <option value="cost">Amount ($)</option>
-              </select>
-              <button
-                onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                className="rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-1.5 text-xs font-semibold hover:bg-zinc-700"
-              >
-                {sortOrder === 'asc' ? '↑ Asc' : '↓ Desc'}
-              </button>
+            <div className="h-[280px]">
+              {filteredExpenses.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-center p-4">
+                  <ClipboardList size={24} className="text-text-muted/40 mb-1" />
+                  <p className="text-[11px] font-bold text-text-muted">No Expense entries found.</p>
+                </div>
+              ) : (
+                <DataTable<Expense>
+                  columns={expenseColumns}
+                  data={filteredExpenses}
+                  searchKey="description"
+                  searchPlaceholder="Filter description..."
+                  pageSize={5}
+                />
+              )}
             </div>
           </div>
+        </div>
+      </div>
 
-          {/* Two Panel Layout (FR-7 Specification) */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* LEFT PANEL: Fuel Log Form & Table */}
-            <div className="space-y-6">
-              <div className="p-6 rounded-2xl bg-zinc-900/90 border border-zinc-800">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-emerald-400 mb-4">
-                  Log Fuel Refill
-                </h3>
-                <form onSubmit={handleFuelSubmit} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                        Vehicle *
-                      </label>
-                      <select
-                        value={fuelForm.vehicleId}
-                        onChange={(e) =>
-                          setFuelForm({ ...fuelForm, vehicleId: e.target.value })
-                        }
-                        className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2 text-xs font-medium text-zinc-200"
-                      >
-                        {vehicles.map((v) => (
-                          <option key={v.id} value={v.id}>
-                            {v.registrationNumber}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                        Date
-                      </label>
-                      <input
-                        type="date"
-                        value={fuelForm.date}
-                        onChange={(e) =>
-                          setFuelForm({ ...fuelForm, date: e.target.value })
-                        }
-                        className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2 text-xs font-medium text-zinc-200"
-                      />
-                    </div>
-                  </div>
+      {/* Bottom Summary Panel */}
+      <div className="bg-bg-card border border-border-base rounded-xl p-5 shadow-xs space-y-4">
+        <div className="flex items-center gap-2 pb-3 border-b border-border-base/50">
+          <Calculator className="text-emerald-500 animate-[pulse_2s_infinite]" size={18} />
+          <h3 className="text-sm font-extrabold font-display text-text-base">
+            Vehicle Operational Cost Aggregations (FR-7.3)
+          </h3>
+        </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                        Liters (L) *
-                      </label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        placeholder="e.g. 40"
-                        value={fuelForm.liters}
-                        onChange={(e) =>
-                          setFuelForm({ ...fuelForm, liters: e.target.value })
-                        }
-                        className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2 text-xs font-medium text-zinc-200"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                        Total Cost ($) *
-                      </label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        placeholder="e.g. 60.00"
-                        value={fuelForm.amount}
-                        onChange={(e) =>
-                          setFuelForm({ ...fuelForm, amount: e.target.value })
-                        }
-                        className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2 text-xs font-medium text-zinc-200"
-                      />
-                    </div>
-                  </div>
-
-                  <ValidationError message={fuelError} />
-
-                  <button
-                    type="submit"
-                    disabled={isSubmittingFuel}
-                    className="w-full rounded-xl bg-emerald-600 hover:bg-emerald-500 py-2.5 text-xs font-bold text-white shadow-lg shadow-emerald-600/25 transition-all"
-                  >
-                    {isSubmittingFuel ? 'Logging Fuel...' : '+ Add Fuel Record'}
-                  </button>
-                </form>
-              </div>
-
-              {/* Fuel Logs Table */}
-              <div className="rounded-2xl bg-zinc-900/90 border border-zinc-800 overflow-hidden">
-                <div className="px-6 py-3.5 border-b border-zinc-800 bg-zinc-800/40">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-300">
-                    Fuel Log History ({fuelLogs.length})
-                  </h4>
-                </div>
-                <div className="max-h-80 overflow-y-auto">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-zinc-800/60 text-zinc-400">
-                      <tr>
-                        <th className="px-5 py-2.5">Date</th>
-                        <th className="px-5 py-2.5">Vehicle</th>
-                        <th className="px-5 py-2.5">Liters</th>
-                        <th className="px-5 py-2.5">Cost</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-zinc-800">
-                      {sortList(fuelLogs).map((log) => (
-                        <tr key={log.id} className="hover:bg-zinc-800/30">
-                          <td className="px-5 py-3 text-zinc-400">
-                            {new Date(log.date).toLocaleDateString()}
-                          </td>
-                          <td className="px-5 py-3 font-mono font-bold text-emerald-400">
-                            {log.vehicle?.registrationNumber}
-                          </td>
-                          <td className="px-5 py-3 font-medium text-zinc-200">
-                            {log.liters} L
-                          </td>
-                          <td className="px-5 py-3 font-bold text-white">
-                            ${log.cost.toFixed(2)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+        <div className="h-[300px]">
+          {vehicleSummaries.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-center">
+              <p className="text-xs text-text-muted font-semibold">No operational aggregations calculated yet.</p>
             </div>
-
-            {/* RIGHT PANEL: Expense Form & Table */}
-            <div className="space-y-6">
-              <div className="p-6 rounded-2xl bg-zinc-900/90 border border-zinc-800">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-blue-400 mb-4">
-                  Record General Expense
-                </h3>
-                <form onSubmit={handleExpSubmit} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                        Vehicle *
-                      </label>
-                      <select
-                        value={expForm.vehicleId}
-                        onChange={(e) =>
-                          setExpForm({ ...expForm, vehicleId: e.target.value })
-                        }
-                        className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2 text-xs font-medium text-zinc-200"
-                      >
-                        {vehicles.map((v) => (
-                          <option key={v.id} value={v.id}>
-                            {v.registrationNumber}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                        Category *
-                      </label>
-                      <select
-                        value={expForm.category}
-                        onChange={(e) =>
-                          setExpForm({ ...expForm, category: e.target.value })
-                        }
-                        className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2 text-xs font-medium text-zinc-200"
-                      >
-                        <option value="Toll">Toll</option>
-                        <option value="Maintenance">Maintenance</option>
-                        <option value="Fuel">Fuel</option>
-                        <option value="Other">Other</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                        Amount ($) *
-                      </label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        placeholder="e.g. 25.00"
-                        value={expForm.amount}
-                        onChange={(e) =>
-                          setExpForm({ ...expForm, amount: e.target.value })
-                        }
-                        className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2 text-xs font-medium text-zinc-200"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                        Date
-                      </label>
-                      <input
-                        type="date"
-                        value={expForm.date}
-                        onChange={(e) =>
-                          setExpForm({ ...expForm, date: e.target.value })
-                        }
-                        className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2 text-xs font-medium text-zinc-200"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                      Description
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Highway toll pass"
-                      value={expForm.description}
-                      onChange={(e) =>
-                        setExpForm({ ...expForm, description: e.target.value })
-                      }
-                      className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2 text-xs font-medium text-zinc-200"
-                    />
-                  </div>
-
-                  <ValidationError message={expError} />
-
-                  <button
-                    type="submit"
-                    disabled={isSubmittingExp}
-                    className="w-full rounded-xl bg-blue-600 hover:bg-blue-500 py-2.5 text-xs font-bold text-white shadow-lg shadow-blue-600/25 transition-all"
-                  >
-                    {isSubmittingExp ? 'Recording...' : '+ Record Expense'}
-                  </button>
-                </form>
-              </div>
-
-              {/* Expenses Table */}
-              <div className="rounded-2xl bg-zinc-900/90 border border-zinc-800 overflow-hidden">
-                <div className="px-6 py-3.5 border-b border-zinc-800 bg-zinc-800/40">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-300">
-                    Expense History ({expenses.length})
-                  </h4>
-                </div>
-                <div className="max-h-80 overflow-y-auto">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-zinc-800/60 text-zinc-400">
-                      <tr>
-                        <th className="px-5 py-2.5">Date</th>
-                        <th className="px-5 py-2.5">Vehicle</th>
-                        <th className="px-5 py-2.5">Category</th>
-                        <th className="px-5 py-2.5">Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-zinc-800">
-                      {sortList(expenses).map((exp) => (
-                        <tr key={exp.id} className="hover:bg-zinc-800/30">
-                          <td className="px-5 py-3 text-zinc-400">
-                            {new Date(exp.date).toLocaleDateString()}
-                          </td>
-                          <td className="px-5 py-3 font-mono font-bold text-blue-400">
-                            {exp.vehicle?.registrationNumber}
-                          </td>
-                          <td className="px-5 py-3">
-                            <span className="inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold bg-zinc-800 text-zinc-300 border border-zinc-700">
-                              {exp.category}
-                            </span>
-                          </td>
-                          <td className="px-5 py-3 font-bold text-white">
-                            ${exp.amount.toFixed(2)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* BOTTOM: Auto-Computed Cost Summary Card per Vehicle (FR-7.3) */}
-          <div className="rounded-2xl bg-zinc-900/90 border border-zinc-800 p-6">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-zinc-300 mb-4">
-              Per-Vehicle Operational Cost Aggregation (FR-7.3)
-            </h3>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-zinc-800/60 text-zinc-400 uppercase">
-                  <tr>
-                    <th className="px-5 py-3 font-semibold">Vehicle</th>
-                    <th className="px-5 py-3 font-semibold">Model</th>
-                    <th className="px-5 py-3 font-semibold">Fuel Cost</th>
-                    <th className="px-5 py-3 font-semibold">Maintenance Cost</th>
-                    <th className="px-5 py-3 font-semibold">Other Cost</th>
-                    <th className="px-5 py-3 font-semibold text-right">Total Operational Cost</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-800 text-zinc-200">
-                  {summaries.map((s) => (
-                    <tr key={s.vehicleId} className="hover:bg-zinc-800/40">
-                      <td className="px-5 py-3.5 font-mono font-bold text-cyan-400">
-                        {s.registrationNumber}
-                      </td>
-                      <td className="px-5 py-3.5 text-zinc-400">{s.name}</td>
-                      <td className="px-5 py-3.5 text-emerald-400 font-medium">
-                        ${s.fuelCost.toFixed(2)}
-                      </td>
-                      <td className="px-5 py-3.5 text-amber-400 font-medium">
-                        ${s.maintenanceCost.toFixed(2)}
-                      </td>
-                      <td className="px-5 py-3.5 text-purple-400 font-medium">
-                        ${s.otherCost.toFixed(2)}
-                      </td>
-                      <td className="px-5 py-3.5 font-extrabold text-white text-right text-sm">
-                        ${s.totalOperationalCost.toFixed(2)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          ) : (
+            <DataTable<VehicleSummary>
+              columns={summaryColumns}
+              data={vehicleSummaries}
+              searchKey="name"
+              searchPlaceholder="Filter vehicles by name..."
+              pageSize={5}
+            />
+          )}
+        </div>
       </div>
     </div>
-  )
-}
+  );
+});

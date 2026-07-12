@@ -1,502 +1,453 @@
-'use client'
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
-import React, { useEffect, useState, useMemo } from 'react'
-import { KpiCard } from '@/components/ui/KpiCard'
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-} from 'recharts'
+import { useState, useMemo, useCallback, memo } from 'react';
+import { useData } from '../../contexts/DataContext';
+import { DataTable, Column } from '../../components/data-table/DataTable';
+import { MetricCard, StatusPill } from '../../components/ui/StatusAndMetrics';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart3, Download, RefreshCw, AlertCircle, FileText, Fuel, DollarSign, Percent, TrendingUp } from 'lucide-react';
+import { SpinnerCircular } from '../../components/ui/StatusAndMetrics';
 
 interface VehicleReportItem {
-  vehicleId: string
-  registrationNumber: string
-  name: string
-  type: string
-  status: string
-  acquisitionCost: number
-  odometer: number
-  totalDistance: number
-  fuelConsumed: number
-  fuelEfficiency: number
-  fuelCost: number
-  maintenanceCost: number
-  otherCost: number
-  totalOperationalCost: number
-  revenue: number
-  roi: number
-  completedTrips: number
-  totalTrips: number
+  id: string;
+  regNumber: string;
+  name: string;
+  type: string;
+  odometer: number;
+  status: string;
+  fuelCost: number;
+  maintCost: number;
+  otherCost: number;
+  operationalCost: number;
+  fuelEfficiency: number;
+  roi: number;
 }
 
-interface ReportsData {
-  kpis: {
-    avgFuelEfficiency: number
-    totalFleetCost: number
-    avgRoi: number
-    fleetUtilization: number
-  }
-  vehicleReports: VehicleReportItem[]
-  categoryBreakdown: {
-    name: string
-    amount: number
-    color: string
-  }[]
-}
+export const AnalyticsPage = memo(function AnalyticsPage() {
+  const {
+    vehicles,
+    trips,
+    expenses,
+    loading,
+    error,
+    refreshData,
+  } = useData();
 
-export default function AnalyticsPage() {
-  const [data, setData] = useState<ReportsData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<
-    'table' | 'efficiency' | 'cost' | 'roi'
-  >('table')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [sortBy, setSortBy] = useState<'roi' | 'cost' | 'efficiency'>('roi')
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+  const [activeSubTab, setActiveSubTab] = useState<'fleet' | 'fuel' | 'cost' | 'roi'>('fleet');
+  const [lastRefreshed, setLastRefreshed] = useState<string>(new Date().toLocaleTimeString());
 
-  const fetchReports = async () => {
-    setLoading(true)
-    try {
-      const res = await fetch('/api/reports')
-      if (!res.ok) throw new Error('Failed to fetch reports')
-      const json = await res.json()
-      if (json.success) {
-        setData(json)
-      }
-    } catch (err) {
-      console.error('Error fetching analytics reports:', err)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const handleRefresh = useCallback(async () => {
+    await refreshData();
+    setLastRefreshed(new Date().toLocaleTimeString());
+  }, [refreshData]);
 
-  useEffect(() => {
-    fetchReports()
-  }, [])
+  // Compute detailed metrics for each vehicle
+  const vehicleReportData = useMemo<VehicleReportItem[]>(() => {
+    return vehicles.map((v) => {
+      // operational cost
+      const vExpenses = expenses.filter((exp) => exp.vehicleId === v.id);
+      const fuelCost = vExpenses.filter((e) => e.category === 'Fuel').reduce((sum, e) => sum + e.amount, 0);
+      const maintCost = vExpenses.filter((e) => e.category === 'Maintenance').reduce((sum, e) => sum + e.amount, 0);
+      const otherCost = vExpenses.filter((e) => e.category === 'Toll' || e.category === 'Other').reduce((sum, e) => sum + e.amount, 0);
+      const totalOpCost = fuelCost + maintCost + otherCost;
 
-  // Filtered and sorted report items
-  const filteredReports = useMemo(() => {
-    if (!data?.vehicleReports) return []
-    return data.vehicleReports
-      .filter((v) => {
-        if (!searchQuery) return true
-        const q = searchQuery.toLowerCase()
-        return (
-          v.registrationNumber.toLowerCase().includes(q) ||
-          v.name.toLowerCase().includes(q) ||
-          v.type.toLowerCase().includes(q)
-        )
-      })
-      .sort((a, b) => {
-        const valA =
-          sortBy === 'roi'
-            ? a.roi
-            : sortBy === 'cost'
-            ? a.totalOperationalCost
-            : a.fuelEfficiency
-        const valB =
-          sortBy === 'roi'
-            ? b.roi
-            : sortBy === 'cost'
-            ? b.totalOperationalCost
-            : b.fuelEfficiency
-        return sortOrder === 'asc' ? valA - valB : valB - valA
-      })
-  }, [data, searchQuery, sortBy, sortOrder])
+      // Fuel efficiency
+      const vTrips = trips.filter((t) => t.vehicleId === v.id && t.status === 'Completed');
+      const totalDistance = vTrips.reduce((sum, t) => sum + (t.plannedDistance || 0), 0);
+      const totalFuel = vTrips.reduce((sum, t) => sum + (t.fuelConsumed || 0), 0);
+      const fuelEfficiency = totalFuel > 0 ? totalDistance / totalFuel : 0;
 
-  // CSV Export Functionality (Aligned with PRD Section 15)
-  const handleExportCSV = () => {
-    if (!data?.vehicleReports) return
+      // ROI
+      const totalRevenue = vTrips.reduce((sum, t) => sum + (t.revenue || 0), 0);
+      const acquisitionCost = v.acquisitionCost || 10000;
+      const roi = ((totalRevenue - totalOpCost) / acquisitionCost) * 100;
 
-    const formattedData = data.vehicleReports.map((v) => ({
-      "Registration Number": v.registrationNumber,
-      "Model Name": v.name,
-      "Vehicle Type": v.type,
-      "Current Odometer (km)": v.odometer,
-      "Total Operational Cost": v.totalOperationalCost,
-      "Calculated ROI": (v.roi / 100).toFixed(4),
-      "Current Status": v.status,
-    }))
+      return {
+        id: v.id || '',
+        regNumber: v.regNumber || '',
+        name: v.name || '',
+        type: v.type || '',
+        odometer: v.odometer || 0,
+        status: v.status || 'AVAILABLE',
+        fuelCost,
+        maintCost,
+        otherCost,
+        operationalCost: totalOpCost,
+        fuelEfficiency,
+        roi,
+      };
+    });
+  }, [vehicles, expenses, trips]);
 
-    const headers = Object.keys(formattedData[0])
+  // Compute 4 global KPI Summary Cards
+  const stats = useMemo(() => {
+    // 1. Avg Fuel Efficiency = Total completed distance / Total completed fuel
+    const completedTrips = trips.filter((t) => t.status === 'Completed');
+    const totalDistance = completedTrips.reduce((sum, t) => sum + (t.plannedDistance || 0), 0);
+    const totalFuel = completedTrips.reduce((sum, t) => sum + (t.fuelConsumed || 0), 0);
+    const avgFuelEfficiency = totalFuel > 0 ? totalDistance / totalFuel : 0;
+
+    // 2. Total Fleet Cost = Sum of all expenses
+    const totalFleetCost = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+
+    // 3. Avg ROI (%) = Sum of active vehicles ROI / Count of active vehicles
+    const activeVehiclesReport = vehicleReportData.filter((v) => v.status !== 'RETIRED');
+    const avgRoi =
+      activeVehiclesReport.length > 0
+        ? activeVehiclesReport.reduce((sum, v) => sum + v.roi, 0) / activeVehiclesReport.length
+        : 0;
+
+    // 4. Fleet Utilization (%) = (Vehicles On Trip or Dispatched / Total Active Vehicles) * 100
+    const activeFleet = vehicles.filter((v) => v.status !== 'RETIRED');
+    const busyVehicles = activeFleet.filter(
+      (v) => v.status === 'ON_TRIP' || v.status === 'DISPATCHED'
+    );
+    const fleetUtilization =
+      activeFleet.length > 0 ? (busyVehicles.length / activeFleet.length) * 100 : 0;
+
+    return {
+      avgFuelEfficiency,
+      totalFleetCost,
+      avgRoi,
+      fleetUtilization,
+    };
+  }, [trips, expenses, vehicles, vehicleReportData]);
+
+  // CSV Export handler
+  const handleExportCSV = useCallback(() => {
+    const headers = [
+      'Registration Number',
+      'Model Name',
+      'Vehicle Type',
+      'Current Odometer (km)',
+      'Total Operational Cost',
+      'Calculated ROI (%)',
+      'Current Status',
+    ];
+
     const csvRows = [
       headers.join(','),
-      ...formattedData.map((row: any) =>
-        headers
-          .map((fieldName) => {
-            const value = row[fieldName]
-            const escaped = ('' + value).replace(/"/g, '""')
-            return escaped.includes(',') || escaped.includes('\n') ? `"${escaped}"` : escaped
-          })
-          .join(',')
+      ...vehicleReportData.map((row) =>
+        [
+          `"${row.regNumber}"`,
+          `"${row.name}"`,
+          `"${row.type}"`,
+          row.odometer,
+          row.operationalCost.toFixed(2),
+          row.roi.toFixed(2),
+          `"${row.status}"`,
+        ].join(',')
       ),
-    ]
+    ];
 
-    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + csvRows.join('\n')
-    const encodedUri = encodeURI(csvContent)
-    const link = document.createElement('a')
-    link.setAttribute('href', encodedUri)
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
     link.setAttribute(
       'download',
-      `fleet_report_export.csv`
-    )
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+      `transitops_fleet_report_${new Date().toISOString().slice(0, 10)}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }, [vehicleReportData]);
+
+  // Fleet Report columns
+  const fleetColumns: Column<VehicleReportItem>[] = useMemo(
+    () => [
+      {
+        id: 'regNumber',
+        header: 'Registration Number',
+        accessorKey: 'regNumber',
+        sortable: true,
+        cell: (row) => <span className="font-mono font-bold uppercase">{row.regNumber}</span>,
+      },
+      {
+        id: 'name',
+        header: 'Model Name',
+        accessorKey: 'name',
+        sortable: true,
+        cell: (row) => <span className="font-medium text-text-base">{row.name}</span>,
+      },
+      {
+        id: 'type',
+        header: 'Vehicle Type',
+        accessorKey: 'type',
+        sortable: true,
+      },
+      {
+        id: 'odometer',
+        header: 'Current Odometer (km)',
+        accessorKey: 'odometer',
+        sortable: true,
+        cell: (row) => <span className="font-mono text-xs">{row.odometer.toLocaleString()} km</span>,
+      },
+      {
+        id: 'operationalCost',
+        header: 'Total Operational Cost',
+        accessorKey: 'operationalCost',
+        sortable: true,
+        cell: (row) => (
+          <span className="font-mono font-bold">
+            ${row.operationalCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+          </span>
+        ),
+      },
+      {
+        id: 'roi',
+        header: 'Calculated ROI',
+        accessorKey: 'roi',
+        sortable: true,
+        cell: (row) => (
+          <span className={`font-mono font-bold ${row.roi >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            {row.roi.toFixed(1)}%
+          </span>
+        ),
+      },
+      {
+        id: 'status',
+        header: 'Current Status',
+        accessorKey: 'status',
+        sortable: true,
+        cell: (row) => <StatusPill status={row.status as any} />,
+      },
+    ],
+    []
+  );
+
+  if (loading && vehicleReportData.length === 0) {
+    return (
+      <div className="h-[400px] flex flex-col items-center justify-center gap-3">
+        <SpinnerCircular size="lg" />
+        <p className="text-sm text-text-muted">Analyzing operational statistics...</p>
+      </div>
+    );
+  }
+
+  if (error && vehicleReportData.length === 0) {
+    return (
+      <div className="h-[400px] flex flex-col items-center justify-center gap-3 border border-red-500/20 bg-red-500/5 rounded-xl p-6">
+        <AlertCircle size={32} className="text-red-500" />
+        <h3 className="text-sm font-bold text-text-base">System Error</h3>
+        <p className="text-xs text-text-muted text-center max-w-sm">{error}</p>
+        <button
+          onClick={handleRefresh}
+          className="mt-2 px-3 py-1.5 text-xs font-bold bg-bg-surface border border-border-base text-text-base rounded-lg hover:bg-bg-base/40 flex items-center gap-1.5"
+        >
+          <RefreshCw size={12} />
+          <span>Retry Connection</span>
+        </button>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="space-y-8 select-none">
+      {/* Header Panel */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight font-display text-text-base flex items-center gap-2">
-            📊 Reports & Financial Analytics
-          </h1>
-          <p className="text-sm text-text-muted mt-1">
-            Fleet-wide operational efficiency, ROI analysis, expenditure breakdowns, and CSV export.
+          <h2 className="text-xl font-extrabold tracking-tight font-display text-text-base">
+            Reports & Analytics
+          </h2>
+          <p className="text-xs text-text-muted mt-0.5">
+            Audit overall operational finance performance, ROI charts, and download compliance reports.
           </p>
+        </div>
+
+        <div className="flex items-center gap-2.5 w-full sm:w-auto">
+          <span className="text-[10px] font-bold text-text-muted mr-1.5">
+            Last updated: {lastRefreshed}
+          </span>
+          <button
+            onClick={handleRefresh}
+            className="p-2 border border-border-base bg-bg-surface hover:bg-bg-base/50 text-text-muted rounded-lg transition-all"
+            title="Refresh Data"
+          >
+            <RefreshCw size={16} />
+          </button>
         </div>
       </div>
 
-      <div className="space-y-8">
-          {/* Top Row: 4 Metric Summary Cards (FR-8.1 to FR-8.4) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            <KpiCard
-              title="Avg Fuel Efficiency"
-              value={`${data?.kpis.avgFuelEfficiency || 0} km/L`}
-              subtitle="Distance per liter across fleet"
-              accentColor="emerald"
-              icon={<span>⛽</span>}
-            />
-            <KpiCard
-              title="Total Fleet Cost"
-              value={`$${(data?.kpis.totalFleetCost || 0).toLocaleString()}`}
-              subtitle="Fuel, maintenance & toll expenses"
-              accentColor="blue"
-              icon={<span>💰</span>}
-            />
-            <KpiCard
-              title="Avg Vehicle ROI"
-              value={`${data?.kpis.avgRoi || 0}%`}
-              subtitle="Net return vs acquisition cost"
-              accentColor="purple"
-              icon={<span>📈</span>}
-            />
-            <KpiCard
-              title="Fleet Utilization"
-              value={`${data?.kpis.fleetUtilization || 0}%`}
-              subtitle="Active operational assets"
-              accentColor="cyan"
-              icon={<span>🚚</span>}
-            />
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <MetricCard
+          label="Avg Fuel Efficiency"
+          value={`${stats.avgFuelEfficiency.toFixed(2)} km/L`}
+          icon={<Fuel size={16} className="text-emerald-500" />}
+        />
+        <MetricCard
+          label="Total Fleet Cost"
+          value={`$${stats.totalFleetCost.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+          icon={<DollarSign size={16} className="text-blue-500" />}
+        />
+        <MetricCard
+          label="Avg Vehicle ROI"
+          value={`${stats.avgRoi.toFixed(1)}%`}
+          icon={<Percent size={16} className={stats.avgRoi >= 0 ? 'text-emerald-500' : 'text-red-500'} />}
+        />
+        <MetricCard
+          label="Fleet Utilization"
+          value={`${stats.fleetUtilization.toFixed(1)}%`}
+          icon={<TrendingUp size={16} className="text-amber-500" />}
+        />
+      </div>
+
+      {/* Main Tabs Panel */}
+      <div className="bg-bg-card border border-border-base rounded-xl p-5 shadow-xs space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border-base/50 pb-4">
+          <div className="flex flex-wrap rounded-lg border border-border-base p-0.5 bg-bg-surface">
+            {[
+              { id: 'fleet', label: 'Fleet Report', icon: FileText },
+              { id: 'fuel', label: 'Fuel Efficiency', icon: Fuel },
+              { id: 'cost', label: 'Operational Costs', icon: BarChart3 },
+              { id: 'roi', label: 'Vehicle ROI', icon: Percent },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveSubTab(tab.id as any)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-md transition-all ${
+                  activeSubTab === tab.id
+                    ? 'bg-muted-base text-white border border-border-base/50 shadow-sm'
+                    : 'text-text-muted hover:text-text-base border border-transparent'
+                }`}
+              >
+                <tab.icon size={12} />
+                <span>{tab.label}</span>
+              </button>
+            ))}
           </div>
 
-          {/* TAB BAR & EXPORT CONTROLS */}
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-800 pb-4">
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setActiveTab('table')}
-                className={`rounded-xl px-4 py-2 text-xs font-bold transition-all ${
-                  activeTab === 'table'
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/25'
-                    : 'bg-zinc-900 text-zinc-400 hover:text-white'
-                }`}
-              >
-                📋 Fleet Report Table
-              </button>
-              <button
-                onClick={() => setActiveTab('efficiency')}
-                className={`rounded-xl px-4 py-2 text-xs font-bold transition-all ${
-                  activeTab === 'efficiency'
-                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/25'
-                    : 'bg-zinc-900 text-zinc-400 hover:text-white'
-                }`}
-              >
-                ⛽ Fuel Efficiency Chart
-              </button>
-              <button
-                onClick={() => setActiveTab('cost')}
-                className={`rounded-xl px-4 py-2 text-xs font-bold transition-all ${
-                  activeTab === 'cost'
-                    ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/25'
-                    : 'bg-zinc-900 text-zinc-400 hover:text-white'
-                }`}
-              >
-                📊 Operational Costs
-              </button>
-              <button
-                onClick={() => setActiveTab('roi')}
-                className={`rounded-xl px-4 py-2 text-xs font-bold transition-all ${
-                  activeTab === 'roi'
-                    ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/25'
-                    : 'bg-zinc-900 text-zinc-400 hover:text-white'
-                }`}
-              >
-                📈 Vehicle ROI Analysis
-              </button>
-            </div>
-
+          {activeSubTab === 'fleet' && (
             <button
               onClick={handleExportCSV}
-              className="rounded-xl bg-emerald-600 hover:bg-emerald-500 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-emerald-600/20 flex items-center gap-2"
+              className="flex items-center justify-center gap-2 h-8 px-4 text-[11px] font-bold bg-status-dispatched text-white hover:bg-opacity-95 shadow-sm rounded-lg transition-all"
             >
-              <span>📥 Export CSV Report</span>
+              <Download size={12} />
+              <span>Export CSV</span>
             </button>
-          </div>
+          )}
+        </div>
 
-          {/* TAB 1: FLEET REPORT TABLE (FR-8.5 & FR-8.6) */}
-          {activeTab === 'table' && (
-            <div className="rounded-2xl bg-zinc-900/90 border border-zinc-800 overflow-hidden">
-              <div className="p-4 border-b border-zinc-800 flex flex-wrap items-center justify-between gap-4 bg-zinc-800/40">
-                <div className="flex items-center gap-3">
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-zinc-200">
-                    Per-Vehicle Operational Performance & ROI
-                  </h3>
+        {/* Tab Contents */}
+        <div className="min-h-[380px]">
+          {activeSubTab === 'fleet' && (
+            <div>
+              {vehicleReportData.length === 0 ? (
+                <div className="h-[300px] flex flex-col items-center justify-center text-center">
+                  <FileText size={28} className="text-text-muted/40 mb-1" />
+                  <p className="text-xs text-text-muted font-semibold">No fleet records available.</p>
                 </div>
+              ) : (
+                <DataTable<VehicleReportItem>
+                  columns={fleetColumns}
+                  data={vehicleReportData}
+                  searchKey="name"
+                  searchPlaceholder="Search vehicles by name..."
+                  pageSize={8}
+                />
+              )}
+            </div>
+          )}
 
-                <div className="flex items-center gap-3">
-                  <input
-                    type="text"
-                    placeholder="Search vehicle or type..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-1.5 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none"
-                  />
+          {activeSubTab === 'fuel' && (
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-xs font-extrabold text-text-base">Fuel Efficiency per Vehicle (km/L)</h4>
+                <p className="text-[10px] text-text-muted">Shows the computed efficiency metrics from completed trips.</p>
+              </div>
 
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as any)}
-                    className="rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-200"
-                  >
-                    <option value="roi">Sort: ROI %</option>
-                    <option value="cost">Sort: Total Cost</option>
-                    <option value="efficiency">Sort: Fuel Efficiency</option>
-                  </select>
-
-                  <button
-                    onClick={() =>
-                      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
-                    }
-                    className="rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-1.5 text-xs font-semibold hover:bg-zinc-700"
-                  >
-                    {sortOrder === 'asc' ? '↑ Asc' : '↓ Desc'}
-                  </button>
+              {vehicleReportData.length === 0 ? (
+                <div className="h-[300px] flex flex-col items-center justify-center text-center">
+                  <AlertCircle size={28} className="text-text-muted/40 mb-1" />
+                  <p className="text-xs text-text-muted font-semibold">No fuel efficiency data.</p>
                 </div>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-zinc-800/60 text-zinc-400 uppercase tracking-wider">
-                    <tr>
-                      <th className="px-5 py-3 font-semibold">Vehicle</th>
-                      <th className="px-5 py-3 font-semibold">Type</th>
-                      <th className="px-5 py-3 font-semibold">Distance</th>
-                      <th className="px-5 py-3 font-semibold">Fuel Consumed</th>
-                      <th className="px-5 py-3 font-semibold">Efficiency</th>
-                      <th className="px-5 py-3 font-semibold">Op. Cost</th>
-                      <th className="px-5 py-3 font-semibold">Revenue</th>
-                      <th className="px-5 py-3 font-semibold text-right">ROI %</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-800 text-zinc-200">
-                    {loading ? (
-                      <tr>
-                        <td colSpan={8} className="px-6 py-8 text-center text-zinc-500">
-                          Loading analytics reports...
-                        </td>
-                      </tr>
-                    ) : filteredReports.length === 0 ? (
-                      <tr>
-                        <td colSpan={8} className="px-6 py-8 text-center text-zinc-500">
-                          No vehicle records found.
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredReports.map((v) => (
-                        <tr
-                          key={v.vehicleId}
-                          className="hover:bg-zinc-800/40 transition-colors"
-                        >
-                          <td className="px-5 py-3.5">
-                            <span className="font-mono font-bold text-cyan-400 block">
-                              {v.registrationNumber}
-                            </span>
-                            <span className="text-[11px] text-zinc-400">
-                              {v.name}
-                            </span>
-                          </td>
-                          <td className="px-5 py-3.5 text-zinc-300">{v.type}</td>
-                          <td className="px-5 py-3.5 font-medium text-zinc-200">
-                            {v.totalDistance} km
-                          </td>
-                          <td className="px-5 py-3.5 font-medium text-zinc-200">
-                            {v.fuelConsumed} L
-                          </td>
-                          <td className="px-5 py-3.5 font-bold text-emerald-400">
-                            {v.fuelEfficiency} km/L
-                          </td>
-                          <td className="px-5 py-3.5 font-bold text-amber-400">
-                            ${v.totalOperationalCost.toLocaleString()}
-                          </td>
-                          <td className="px-5 py-3.5 font-bold text-blue-400">
-                            ${v.revenue.toLocaleString()}
-                          </td>
-                          <td className="px-5 py-3.5 text-right">
-                            <span
-                              className={`font-extrabold text-sm ${
-                                v.roi >= 0 ? 'text-emerald-400' : 'text-rose-400'
-                              }`}
-                            >
-                              {v.roi}%
-                            </span>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+              ) : (
+                <div className="w-full h-[320px] bg-bg-surface/20 rounded-lg p-3">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={vehicleReportData} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                      <XAxis dataKey="regNumber" stroke="#94a3b8" fontSize={10} tickLine={false} />
+                      <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: '#1e293b', borderColor: '#475569', borderRadius: '8px', color: '#f8fafc', fontSize: '11px' }}
+                      />
+                      <Bar dataKey="fuelEfficiency" name="Efficiency (km/L)" fill="#10b981" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
             </div>
           )}
 
-          {/* TAB 2: FUEL EFFICIENCY CHART */}
-          {activeTab === 'efficiency' && (
-            <div className="p-6 rounded-2xl bg-zinc-900/90 border border-zinc-800">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-emerald-400 mb-6">
-                Fuel Efficiency by Vehicle (km / Liter)
-              </h3>
-              <div className="h-80 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={filteredReports}
-                    margin={{ top: 10, right: 30, left: 0, bottom: 20 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                    <XAxis
-                      dataKey="registrationNumber"
-                      stroke="#9ca3af"
-                      fontSize={11}
-                    />
-                    <YAxis stroke="#9ca3af" fontSize={11} unit=" km/L" />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: '#18181b',
-                        borderColor: '#27272a',
-                        borderRadius: '0.75rem',
-                        color: '#f4f4f5',
-                      }}
-                    />
-                    <Legend />
-                    <Bar
-                      dataKey="fuelEfficiency"
-                      name="Fuel Efficiency (km/L)"
-                      fill="#10b981"
-                      radius={[6, 6, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
+          {activeSubTab === 'cost' && (
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-xs font-extrabold text-text-base">Operational Cost Breakdown ($)</h4>
+                <p className="text-[10px] text-text-muted">Aggregated fuel, maintenance, and toll/other costs per fleet asset.</p>
               </div>
+
+              {vehicleReportData.length === 0 ? (
+                <div className="h-[300px] flex flex-col items-center justify-center text-center">
+                  <AlertCircle size={28} className="text-text-muted/40 mb-1" />
+                  <p className="text-xs text-text-muted font-semibold">No cost data available.</p>
+                </div>
+              ) : (
+                <div className="w-full h-[320px] bg-bg-surface/20 rounded-lg p-3">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={vehicleReportData} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                      <XAxis dataKey="regNumber" stroke="#94a3b8" fontSize={10} tickLine={false} />
+                      <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: '#1e293b', borderColor: '#475569', borderRadius: '8px', color: '#f8fafc', fontSize: '11px' }}
+                      />
+                      <Legend wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }} />
+                      <Bar dataKey="fuelCost" name="Fuel Cost" stackId="costs" fill="#10b981" />
+                      <Bar dataKey="maintCost" name="Maintenance" stackId="costs" fill="#f59e0b" />
+                      <Bar dataKey="otherCost" name="Tolls & Other" stackId="costs" fill="#3b82f6" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
             </div>
           )}
 
-          {/* TAB 3: OPERATIONAL COST CHART */}
-          {activeTab === 'cost' && (
-            <div className="p-6 rounded-2xl bg-zinc-900/90 border border-zinc-800">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-amber-400 mb-6">
-                Operational Cost Breakdown per Vehicle ($)
-              </h3>
-              <div className="h-80 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={filteredReports}
-                    margin={{ top: 10, right: 30, left: 0, bottom: 20 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                    <XAxis
-                      dataKey="registrationNumber"
-                      stroke="#9ca3af"
-                      fontSize={11}
-                    />
-                    <YAxis stroke="#9ca3af" fontSize={11} unit=" $" />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: '#18181b',
-                        borderColor: '#27272a',
-                        borderRadius: '0.75rem',
-                        color: '#f4f4f5',
-                      }}
-                    />
-                    <Legend />
-                    <Bar
-                      dataKey="fuelCost"
-                      name="Fuel Cost"
-                      stackId="a"
-                      fill="#10b981"
-                    />
-                    <Bar
-                      dataKey="maintenanceCost"
-                      name="Maintenance Cost"
-                      stackId="a"
-                      fill="#f59e0b"
-                    />
-                    <Bar
-                      dataKey="otherCost"
-                      name="Other / Tolls"
-                      stackId="a"
-                      fill="#3b82f6"
-                      radius={[6, 6, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
+          {activeSubTab === 'roi' && (
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-xs font-extrabold text-text-base">Calculated Vehicle ROI (%)</h4>
+                <p className="text-[10px] text-text-muted">Shows return on investment based on acquisition cost, revenue, and operation cost.</p>
               </div>
-            </div>
-          )}
 
-          {/* TAB 4: VEHICLE ROI CHART */}
-          {activeTab === 'roi' && (
-            <div className="p-6 rounded-2xl bg-zinc-900/90 border border-zinc-800">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-purple-400 mb-6">
-                Net Return on Investment (ROI %) per Vehicle
-              </h3>
-              <div className="h-80 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={filteredReports}
-                    margin={{ top: 10, right: 30, left: 0, bottom: 20 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                    <XAxis
-                      dataKey="registrationNumber"
-                      stroke="#9ca3af"
-                      fontSize={11}
-                    />
-                    <YAxis stroke="#9ca3af" fontSize={11} unit="%" />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: '#18181b',
-                        borderColor: '#27272a',
-                        borderRadius: '0.75rem',
-                        color: '#f4f4f5',
-                      }}
-                    />
-                    <Legend />
-                    <Bar
-                      dataKey="roi"
-                      name="ROI (%)"
-                      fill="#8b5cf6"
-                      radius={[6, 6, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+              {vehicleReportData.length === 0 ? (
+                <div className="h-[300px] flex flex-col items-center justify-center text-center">
+                  <AlertCircle size={28} className="text-text-muted/40 mb-1" />
+                  <p className="text-xs text-text-muted font-semibold">No ROI data calculated.</p>
+                </div>
+              ) : (
+                <div className="w-full h-[320px] bg-bg-surface/20 rounded-lg p-3">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={vehicleReportData} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                      <XAxis dataKey="regNumber" stroke="#94a3b8" fontSize={10} tickLine={false} />
+                      <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: '#1e293b', borderColor: '#475569', borderRadius: '8px', color: '#f8fafc', fontSize: '11px' }}
+                      />
+                      <Bar dataKey="roi" name="ROI (%)" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
             </div>
           )}
+        </div>
       </div>
     </div>
-  )
-}
+  );
+});
