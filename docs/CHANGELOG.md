@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 
 ### Changed
+- [`d8840e9`](https://github.com/yashhh-23/chanakya/commit/d8840e9bdeb20f2c2fde650e2ee80f28d65146ee) DOCS: Add detailed PRD transport.md to docs/
 
 ### Internal
 - [`5ca0968`](https://github.com/yashhh-23/chanakya/commit/5ca0968e6ab69bb4a01d7e59c659aaa431b548e5) CHORE: Change bot name to DOCS help related bot
