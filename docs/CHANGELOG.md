@@ -11,3 +11,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changed
 
 ### Internal
+- [`e936ebb`](https://github.com/yashhh-23/chanakya/commit/e936ebbfe744fa4ead118e76ba7a1c86d8be9e36) CHORE: Setup GitHub Action for documentation bot
