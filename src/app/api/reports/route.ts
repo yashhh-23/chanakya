@@ -1,5 +1,7 @@
-import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { ApiResponse } from '@/lib/utils/api-response'
+import { normalizeStatus } from '@/lib/utils/status'
+import { VehicleService } from '@/lib/services/vehicle.service'
 
 export async function GET() {
   try {
@@ -18,12 +20,14 @@ export async function GET() {
       }),
     ])
 
+    // Compute cost aggregation using shared service logic (DUP-5)
+    const costSummaries = VehicleService.getCostBreakdownForVehicles(vehicles, expenses)
+
     // Compute Per-Vehicle Analytics
     const vehicleReports = vehicles.map((v: any) => {
       const vTrips = trips.filter((t: any) => t.vehicleId === v.id)
-      const vCompletedTrips = vTrips.filter((t: any) => (t.status || '').toUpperCase() === 'COMPLETED')
-      const vExpenses = expenses.filter((e: any) => e.vehicleId === v.id)
-      const vFuelLogs = fuelLogs.filter((f: any) => f.vehicleId === v.id)
+      const vCompletedTrips = vTrips.filter((t: any) => normalizeStatus(t.status) === 'COMPLETED')
+      const summary = costSummaries[v.id] || { fuelCost: 0, maintenanceCost: 0, otherCost: 0, totalOperationalCost: 0 }
 
       // Fuel Efficiency (km/L): Σ Distance Completed / Σ Fuel Consumed
       const totalDistance = vCompletedTrips.reduce((sum: number, t: any) => sum + (t.plannedDistance || 0), 0)
@@ -31,26 +35,12 @@ export async function GET() {
       const fuelEfficiency =
         totalFuelConsumed > 0 ? parseFloat((totalDistance / totalFuelConsumed).toFixed(2)) : 0
 
-      const fuelCost = vExpenses
-        .filter((e: any) => (e.category || '').toUpperCase() === 'FUEL')
-        .reduce((sum: number, e: any) => sum + (e.amount || 0), 0)
-      const maintenanceCost = vExpenses
-        .filter((e: any) => (e.category || '').toUpperCase() === 'MAINTENANCE')
-        .reduce((sum: number, e: any) => sum + (e.amount || 0), 0)
-      const otherCost = vExpenses
-        .filter((e: any) => {
-          const cat = (e.category || '').toUpperCase()
-          return cat !== 'FUEL' && cat !== 'MAINTENANCE'
-        })
-        .reduce((sum: number, e: any) => sum + (e.amount || 0), 0)
-      const totalOperationalCost = fuelCost + maintenanceCost + otherCost
-
       const revenue = vCompletedTrips.reduce((sum: number, t: any) => sum + (t.revenue || 0), 0)
 
       // ROI = (Revenue - Operational Cost) / Acquisition Cost (as decimal ratio)
       const acquisitionCost = v.acquisitionCost || 1
       const roi = parseFloat(
-        ((revenue - totalOperationalCost) / acquisitionCost).toFixed(4)
+        ((revenue - summary.totalOperationalCost) / acquisitionCost).toFixed(4)
       )
 
       return {
@@ -64,10 +54,10 @@ export async function GET() {
         totalDistance,
         fuelConsumed: totalFuelConsumed,
         fuelEfficiency,
-        fuelCost,
-        maintenanceCost,
-        otherCost,
-        totalOperationalCost,
+        fuelCost: summary.fuelCost,
+        maintenanceCost: summary.maintenanceCost,
+        otherCost: summary.otherCost,
+        totalOperationalCost: summary.totalOperationalCost,
         revenue,
         roi,
         completedTrips: vCompletedTrips.length,
@@ -82,18 +72,9 @@ export async function GET() {
     const avgFuelEfficiency =
       totalFleetFuel > 0 ? parseFloat((totalFleetDistance / totalFleetFuel).toFixed(2)) : 0
 
-    const activeVehicles = vehicles.filter((v: any) => {
-      const s = (v.status || '').toUpperCase().replace(/[\s_]+/g, ' ')
-      return s === 'ON TRIP'
-    }).length
-    const availableVehicles = vehicles.filter((v: any) => {
-      const s = (v.status || '').toUpperCase().replace(/[\s_]+/g, ' ')
-      return s === 'AVAILABLE'
-    }).length
-    const maintenanceVehicles = vehicles.filter((v: any) => {
-      const s = (v.status || '').toUpperCase().replace(/[\s_]+/g, ' ')
-      return s === 'IN SHOP'
-    }).length
+    const activeVehicles = vehicles.filter((v: any) => normalizeStatus(v.status) === 'ON TRIP').length
+    const availableVehicles = vehicles.filter((v: any) => normalizeStatus(v.status) === 'AVAILABLE').length
+    const maintenanceVehicles = vehicles.filter((v: any) => normalizeStatus(v.status) === 'IN SHOP').length
 
     const operationalCount = activeVehicles + availableVehicles + maintenanceVehicles
     const fleetUtilization = operationalCount > 0
@@ -111,17 +92,17 @@ export async function GET() {
 
     // Cost Breakdown by category
     const totalFuelCost = expenses
-      .filter((e: any) => (e.category || '').toUpperCase() === 'FUEL')
-      .reduce((sum: number, e: any) => sum + e.amount, 0)
+      .filter((e: any) => normalizeStatus(e.category) === 'FUEL')
+      .reduce((sum: number, e: any) => sum + (e.amount || 0), 0)
     const totalMaintenanceCost = expenses
-      .filter((e: any) => (e.category || '').toUpperCase() === 'MAINTENANCE')
-      .reduce((sum: number, e: any) => sum + e.amount, 0)
+      .filter((e: any) => normalizeStatus(e.category) === 'MAINTENANCE')
+      .reduce((sum: number, e: any) => sum + (e.amount || 0), 0)
     const totalOtherCost = expenses
       .filter((e: any) => {
-        const cat = (e.category || '').toUpperCase()
+        const cat = normalizeStatus(e.category)
         return cat !== 'FUEL' && cat !== 'MAINTENANCE'
       })
-      .reduce((sum: number, e: any) => sum + e.amount, 0)
+      .reduce((sum: number, e: any) => sum + (e.amount || 0), 0)
 
     const categoryBreakdown = [
       { name: 'Fuel', amount: totalFuelCost, color: '#10b981' },
@@ -129,8 +110,7 @@ export async function GET() {
       { name: 'Other / Tolls', amount: totalOtherCost, color: '#3b82f6' },
     ]
 
-    return NextResponse.json({
-      success: true,
+    return ApiResponse.success({
       kpis: {
         avgFuelEfficiency,
         totalFleetCost,
@@ -141,6 +121,6 @@ export async function GET() {
       categoryBreakdown,
     })
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 })
+    return ApiResponse.serverError(error)
   }
 }

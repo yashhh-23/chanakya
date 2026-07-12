@@ -33,17 +33,6 @@ export async function POST(request: NextRequest) {
     // Validate payload shape and field constraints
     const validatedData = createDriverSchema.parse(body)
 
-    // Check unique license number explicitly to return clean 409 error
-    const existing = await DriverService.getDrivers({
-      search: validatedData.licenseNumber
-    })
-    const isDuplicate = existing.some(
-      (d: any) => d.licenseNumber.toUpperCase() === validatedData.licenseNumber.toUpperCase()
-    )
-    if (isDuplicate) {
-      return ApiResponse.conflict('License number already exists. Driver license numbers must be unique.')
-    }
-
     const driver = await DriverService.createDriver(validatedData)
     return ApiResponse.success(driver, 201)
   } catch (error) {

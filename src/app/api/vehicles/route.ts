@@ -33,17 +33,6 @@ export async function POST(request: NextRequest) {
     // Validate payload shape and field constraints
     const validatedData = createVehicleSchema.parse(body)
 
-    // Check unique registration number explicitly to return clean 409 error
-    const existing = await VehicleService.getVehicles({
-      search: validatedData.registrationNumber
-    })
-    const isDuplicate = existing.some(
-      (v: any) => v.registrationNumber.toUpperCase() === validatedData.registrationNumber.toUpperCase()
-    )
-    if (isDuplicate) {
-      return ApiResponse.conflict('Registration number already exists. Vehicle registration numbers must be unique.')
-    }
-
     const vehicle = await VehicleService.createVehicle(validatedData)
     return ApiResponse.success(vehicle, 201)
   } catch (error) {

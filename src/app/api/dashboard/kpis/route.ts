@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { ApiResponse } from '@/lib/utils/api-response'
+import { normalizeStatus } from '@/lib/utils/status'
 
 export async function GET(request: Request) {
   try {
@@ -17,22 +18,10 @@ export async function GET(request: Request) {
     })
 
     const totalVehicles = vehicles.length
-    const availableVehicles = vehicles.filter((v: { status: string }) => {
-      const s = (v.status || '').toUpperCase().replace(/[\s_]+/g, ' ')
-      return s === 'AVAILABLE'
-    }).length
-    const activeVehicles = vehicles.filter((v: { status: string }) => {
-      const s = (v.status || '').toUpperCase().replace(/[\s_]+/g, ' ')
-      return s === 'ON TRIP'
-    }).length
-    const maintenanceVehicles = vehicles.filter((v: { status: string }) => {
-      const s = (v.status || '').toUpperCase().replace(/[\s_]+/g, ' ')
-      return s === 'IN SHOP'
-    }).length
-    const retiredVehicles = vehicles.filter((v: { status: string }) => {
-      const s = (v.status || '').toUpperCase().replace(/[\s_]+/g, ' ')
-      return s === 'RETIRED'
-    }).length
+    const availableVehicles = vehicles.filter((v: { status: string }) => normalizeStatus(v.status) === 'AVAILABLE').length
+    const activeVehicles = vehicles.filter((v: { status: string }) => normalizeStatus(v.status) === 'ON TRIP').length
+    const maintenanceVehicles = vehicles.filter((v: { status: string }) => normalizeStatus(v.status) === 'IN SHOP').length
+    const retiredVehicles = vehicles.filter((v: { status: string }) => normalizeStatus(v.status) === 'RETIRED').length
 
     // Fleet utilization calculation per PRD: active / (active + available + maintenance)
     const operationalCount = activeVehicles + availableVehicles + maintenanceVehicles
@@ -67,8 +56,7 @@ export async function GET(request: Request) {
       }),
     ])
 
-    return NextResponse.json({
-      success: true,
+    return ApiResponse.success({
       timestamp: new Date().toISOString(),
       kpis: {
         activeVehicles,
@@ -91,6 +79,6 @@ export async function GET(request: Request) {
       recentTrips,
     })
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 })
+    return ApiResponse.serverError(error)
   }
 }

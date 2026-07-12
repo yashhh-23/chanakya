@@ -122,4 +122,51 @@ export class VehicleService {
       }
     })
   }
+
+  /**
+   * Compute aggregated fuel, maintenance, other, and total operational costs per vehicle
+   */
+  static getCostBreakdownForVehicles(vehicles: any[], expenses: any[]) {
+    const summaryMap: Record<
+      string,
+      {
+        vehicleId: string
+        registrationNumber: string
+        name: string
+        fuelCost: number
+        maintenanceCost: number
+        otherCost: number
+        totalOperationalCost: number
+      }
+    > = {}
+
+    vehicles.forEach((v: any) => {
+      summaryMap[v.id] = {
+        vehicleId: v.id,
+        registrationNumber: v.registrationNumber || v.regNumber || '',
+        name: v.name,
+        fuelCost: 0,
+        maintenanceCost: 0,
+        otherCost: 0,
+        totalOperationalCost: 0,
+      }
+    })
+
+    expenses.forEach((exp: any) => {
+      const entry = summaryMap[exp.vehicleId]
+      if (entry) {
+        const cat = (exp.category || '').toUpperCase()
+        if (cat === 'FUEL') {
+          entry.fuelCost += exp.amount || 0
+        } else if (cat === 'MAINTENANCE') {
+          entry.maintenanceCost += exp.amount || 0
+        } else {
+          entry.otherCost += exp.amount || 0
+        }
+        entry.totalOperationalCost += exp.amount || 0
+      }
+    })
+
+    return summaryMap
+  }
 }

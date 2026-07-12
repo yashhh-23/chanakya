@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { CreateDriverInput, UpdateDriverInput, DriverQueryParams } from '@/lib/validations/driver.backend'
+import { normalizeStatus } from '@/lib/utils/status'
 
 /**
  * Service layer for Driver CRUD operations and status transitions.
@@ -44,14 +45,14 @@ export class DriverService {
 
     // Filter by exact status (checking both uppercase and titlecase to be robust against mixed seed values)
     if (params.status && (params.status as string) !== 'ALL') {
-      const upper = params.status.toUpperCase().replace(/[\s-]+/g, '_')
-      if (upper === 'AVAILABLE') {
+      const normalized = normalizeStatus(params.status)
+      if (normalized === 'AVAILABLE') {
         where.status = { in: ['AVAILABLE', 'Available'] }
-      } else if (upper === 'ON_TRIP') {
+      } else if (normalized === 'ON TRIP') {
         where.status = { in: ['ON_TRIP', 'On Trip'] }
-      } else if (upper === 'OFF_DUTY') {
+      } else if (normalized === 'OFF DUTY') {
         where.status = { in: ['OFF_DUTY', 'Off Duty'] }
-      } else if (upper === 'SUSPENDED') {
+      } else if (normalized === 'SUSPENDED') {
         where.status = { in: ['SUSPENDED', 'Suspended'] }
       } else {
         where.status = params.status
@@ -138,22 +139,22 @@ export class DriverService {
       throw err
     }
 
-    const currentUpper = driver.status.toUpperCase().replace(/[\s-]+/g, '_')
-    const targetUpper = newStatus.toUpperCase().replace(/[\s-]+/g, '_')
+    const currentUpper = normalizeStatus(driver.status)
+    const targetUpper = normalizeStatus(newStatus)
 
     // Rule 1: Expired license check
     const isExpired = driver.licenseExpiryDate < new Date()
-    if ((targetUpper === 'AVAILABLE' || targetUpper === 'ON_TRIP') && isExpired) {
+    if ((targetUpper === 'AVAILABLE' || targetUpper === 'ON TRIP') && isExpired) {
       throw new Error('Driver license is expired. Cannot assign to trips or set to Available.')
     }
 
     // Rule 2: Suspended driver cannot be assigned to trips
-    if (targetUpper === 'ON_TRIP' && currentUpper === 'SUSPENDED') {
+    if (targetUpper === 'ON TRIP' && currentUpper === 'SUSPENDED') {
       throw new Error('Driver status is Suspended. Cannot assign suspended driver to trips.')
     }
 
     // Rule 3: Already On Trip check
-    if (targetUpper === 'ON_TRIP' && currentUpper === 'ON_TRIP') {
+    if (targetUpper === 'ON TRIP' && currentUpper === 'ON TRIP') {
       throw new Error('Driver is already On Trip and cannot be assigned again.')
     }
 

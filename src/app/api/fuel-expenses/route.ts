@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { ApiResponse } from '@/lib/utils/api-response'
+import { VehicleService } from '@/lib/services/vehicle.service'
 
 export async function GET(request: Request) {
   try {
@@ -39,52 +40,18 @@ export async function GET(request: Request) {
       }),
     ])
 
-    // Auto-compute operational cost summary per vehicle (FR-7.3)
+    // Auto-compute operational cost summary per vehicle (FR-7.3) using shared service (DUP-5)
     const allExpenses = await prisma.expense.findMany({})
-    const summaryMap: Record<
-      string,
-      {
-        vehicleId: string
-        registrationNumber: string
-        name: string
-        fuelCost: number
-        maintenanceCost: number
-        otherCost: number
-        totalOperationalCost: number
-      }
-    > = {}
+    const summaryMap = VehicleService.getCostBreakdownForVehicles(vehicles, allExpenses)
 
-    vehicles.forEach((v: any) => {
-      summaryMap[v.id] = {
-        vehicleId: v.id,
-        registrationNumber: v.registrationNumber,
-        name: v.name,
-        fuelCost: 0,
-        maintenanceCost: 0,
-        otherCost: 0,
-        totalOperationalCost: 0,
-      }
-    })
-
-    allExpenses.forEach((exp: any) => {
-      const entry = summaryMap[exp.vehicleId]
-      if (entry) {
-        if (exp.category === 'Fuel') entry.fuelCost += exp.amount
-        else if (exp.category === 'Maintenance') entry.maintenanceCost += exp.amount
-        else entry.otherCost += exp.amount
-        entry.totalOperationalCost += exp.amount
-      }
-    })
-
-    return NextResponse.json({
-      success: true,
+    return ApiResponse.success({
       fuelLogs,
       expenses,
       vehicles,
       vehicleSummaries: Object.values(summaryMap),
     })
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 })
+    return ApiResponse.serverError(error)
   }
 }
 
@@ -93,12 +60,16 @@ export async function POST(request: Request) {
     const data = await request.json()
 
     if (!data.vehicleId || !data.amount || !data.type) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+      return ApiResponse.validationError({
+        issues: [{ path: ['fields'], message: 'Missing required fields' }]
+      } as any)
     }
 
     const amount = parseFloat(data.amount)
     if (isNaN(amount) || amount <= 0) {
-      return NextResponse.json({ error: 'Cost must be a positive number' }, { status: 400 })
+      return ApiResponse.validationError({
+        issues: [{ path: ['amount'], message: 'Cost must be a positive number' }]
+      } as any)
     }
 
     const date = data.date ? new Date(data.date) : new Date()
@@ -106,7 +77,9 @@ export async function POST(request: Request) {
     if (data.type === 'Fuel') {
       const liters = parseFloat(data.liters || '0')
       if (isNaN(liters) || liters <= 0) {
-        return NextResponse.json({ error: 'Liters must be a positive number' }, { status: 400 })
+        return ApiResponse.validationError({
+          issues: [{ path: ['liters'], message: 'Liters must be a positive number' }]
+        } as any)
       }
 
       // Create FuelLog AND corresponding Expense per PRD business rules
@@ -129,7 +102,7 @@ export async function POST(request: Request) {
         },
       })
 
-      return NextResponse.json({ success: true, fuelLog }, { status: 201 })
+      return ApiResponse.success(fuelLog, 201)
     } else {
       // Create general Expense (Toll, Maintenance, Other)
       const category = data.category || 'Other'
@@ -143,9 +116,9 @@ export async function POST(request: Request) {
         },
       })
 
-      return NextResponse.json({ success: true, expense }, { status: 201 })
+      return ApiResponse.success(expense, 201)
     }
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 })
+    return ApiResponse.serverError(error)
   }
 }
