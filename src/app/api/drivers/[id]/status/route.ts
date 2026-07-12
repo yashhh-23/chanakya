@@ -1,13 +1,30 @@
-import { NextResponse } from "next/server";
+import { NextRequest } from 'next/server'
+import { DriverService } from '@/lib/services/driver.service'
+import { ApiResponse } from '@/lib/utils/api-response'
+import { changeDriverStatusSchema } from '@/lib/validations/driver.backend'
 
-export async function GET() {
-  return NextResponse.json({ error: "Endpoint not implemented yet" }, { status: 501 });
-}
+/**
+ * PATCH /api/drivers/[id]/status
+ * Updates the operational status of a driver with centralized business rule enforcement.
+ */
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+    const existing = await DriverService.getDriverById(id)
 
-export async function POST() {
-  return NextResponse.json({ error: "Endpoint not implemented yet" }, { status: 501 });
-}
+    if (!existing) {
+      return ApiResponse.notFound('Driver not found')
+    }
 
-export async function PATCH() {
-  return NextResponse.json({ error: "Endpoint not implemented yet" }, { status: 501 });
+    const body = await request.json()
+    const validatedData = changeDriverStatusSchema.parse(body)
+
+    const updatedDriver = await DriverService.changeDriverStatus(id, validatedData.status)
+    return ApiResponse.success(updatedDriver)
+  } catch (error) {
+    return ApiResponse.serverError(error)
+  }
 }

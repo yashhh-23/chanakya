@@ -1,62 +1,52 @@
-import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { NextRequest } from 'next/server'
+import { DriverService } from '@/lib/services/driver.service'
+import { ApiResponse } from '@/lib/utils/api-response'
+import { createDriverSchema, driverQuerySchema } from '@/lib/validations/driver.backend'
 
-export async function GET(request: Request) {
+/**
+ * GET /api/drivers
+ * Lists drivers with search by name/licenseNumber, filter by status, and whitelisted sorting.
+ */
+export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const status = searchParams.get('status')
-    const search = searchParams.get('search')
+    const rawParams = Object.fromEntries(searchParams.entries())
 
-    const where: any = {}
-    if (status) where.status = status
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { licenseNumber: { contains: search, mode: 'insensitive' } }
-      ]
-    }
+    // Validate query params against whitelist and defaults
+    const validatedParams = driverQuerySchema.parse(rawParams)
 
-    const drivers = await prisma.driver.findMany({ where })
-    return NextResponse.json(drivers)
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    const drivers = await DriverService.getDrivers(validatedParams)
+    return ApiResponse.success(drivers)
+  } catch (error) {
+    return ApiResponse.serverError(error)
   }
 }
 
-export async function POST(request: Request) {
+/**
+ * POST /api/drivers
+ * Creates a new driver with strict validation and unique license number enforcement.
+ */
+export async function POST(request: NextRequest) {
   try {
-    const data = await request.json()
-    if (!data.name || !data.licenseNumber || !data.licenseExpiryDate) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
-    }
+    const body = await request.json()
 
-    const existing = await prisma.driver.findUnique({
-      where: { licenseNumber: data.licenseNumber }
+    // Validate payload shape and field constraints
+    const validatedData = createDriverSchema.parse(body)
+
+    // Check unique license number explicitly to return clean 409 error
+    const existing = await DriverService.getDrivers({
+      search: validatedData.licenseNumber
     })
-    if (existing) {
-      return NextResponse.json({ error: 'License number already exists' }, { status: 400 })
+    const isDuplicate = existing.some(
+      (d: any) => d.licenseNumber.toUpperCase() === validatedData.licenseNumber.toUpperCase()
+    )
+    if (isDuplicate) {
+      return ApiResponse.conflict('License number already exists. Driver license numbers must be unique.')
     }
 
-    const expiryDate = new Date(data.licenseExpiryDate)
-    if (expiryDate < new Date()) {
-      return NextResponse.json({ error: 'License expiry date cannot be in the past' }, { status: 400 })
-    }
-
-    const driver = await prisma.driver.create({
-      data: {
-        name: data.name,
-        licenseNumber: data.licenseNumber,
-        licenseCategory: data.licenseCategory || 'Standard',
-        licenseExpiryDate: expiryDate,
-        contactNumber: data.contactNumber || '',
-        safetyScore: 100,
-        tripCompletionPct: 0,
-        status: data.status || 'Available'
-      }
-    })
-
-    return NextResponse.json(driver, { status: 201 })
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    const driver = await DriverService.createDriver(validatedData)
+    return ApiResponse.success(driver, 201)
+  } catch (error) {
+    return ApiResponse.serverError(error)
   }
 }

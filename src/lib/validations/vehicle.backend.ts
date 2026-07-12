@@ -1,13 +1,26 @@
 import { z } from 'zod'
 
-export const VehicleStatusEnum = z.enum(['AVAILABLE', 'ON_TRIP', 'IN_SHOP', 'RETIRED'])
+export const VehicleStatusEnum = z.enum([
+  'AVAILABLE',
+  'ON_TRIP',
+  'DISPATCHED',
+  'IN_SHOP',
+  'SUSPENDED',
+  'RETIRED',
+  'Available',
+  'On Trip',
+  'Dispatched',
+  'In Shop',
+  'Suspended',
+  'Retired'
+])
 
 export const createVehicleSchema = z.object({
   registrationNumber: z
     .string({ message: 'Registration number is required' })
     .min(1, 'Registration number is required')
-    .max(20, 'Registration number must be at most 20 characters')
-    .regex(/^[a-zA-Z0-9-]+$/, 'Registration number must contain only alphanumeric characters and hyphens'),
+    .max(25, 'Registration number must be at most 25 characters')
+    .regex(/^[a-zA-Z0-9-. ]+$/, 'Registration number must contain only alphanumeric characters, hyphens, dots, or spaces'),
   name: z
     .string({ message: 'Vehicle name is required' })
     .min(1, 'Vehicle name is required')

@@ -21,6 +21,8 @@ interface DataContextType {
   dispatchTrip: (id: string) => Promise<ApiFieldResult>;
   completeTrip: (id: string) => Promise<ApiFieldResult>;
   cancelTrip: (id: string) => Promise<ApiFieldResult>;
+  updateDriver: (id: string, driver: Partial<Driver>) => Promise<ApiFieldResult>;
+  changeDriverStatus: (id: string, status: DriverStatus) => Promise<ApiFieldResult>;
   stats: {
     activeFleetCount: number;
     driversOnDutyCount: number;
@@ -205,7 +207,9 @@ export function DataProvider({children}: {children: ReactNode}) {
       const payload = await response.json().catch(() => null);
 
       if (!response.ok) {
-        return {success: false, error: {field: 'regNumber', message: payload?.error || 'Vehicle registration failed.'}};
+        const errMsg = payload?.details?.[0]?.message || payload?.error || 'Vehicle registration failed.';
+        const errField = payload?.details?.[0]?.field || 'regNumber';
+        return {success: false, error: {field: errField, message: errMsg}};
       }
 
       const vehicleData = payload?.success && payload?.data ? payload.data : payload;
@@ -233,10 +237,13 @@ export function DataProvider({children}: {children: ReactNode}) {
       const payload = await response.json().catch(() => null);
 
       if (!response.ok) {
-        return {success: false, error: {field: 'licenseNumber', message: payload?.error || 'Driver registration failed.'}};
+        const errMsg = payload?.details?.[0]?.message || payload?.error || 'Driver registration failed.';
+        const errField = payload?.details?.[0]?.field || 'licenseNumber';
+        return {success: false, error: {field: errField, message: errMsg}};
       }
 
-      setDrivers((prev) => [mapDriver(payload as ApiDriver), ...prev]);
+      const driverData = payload?.success && payload?.data ? payload.data : payload;
+      setDrivers((prev) => [mapDriver(driverData as ApiDriver), ...prev]);
       return {success: true};
     } catch (err) {
       return {success: false, error: {field: 'licenseNumber', message: err instanceof Error ? err.message : 'Driver registration failed.'}};
@@ -283,6 +290,62 @@ export function DataProvider({children}: {children: ReactNode}) {
   const completeTrip = useCallback((id: string) => changeTripStatus(id, 'complete'), [changeTripStatus]);
   const cancelTrip = useCallback((id: string) => changeTripStatus(id, 'cancel'), [changeTripStatus]);
 
+  const updateDriver = useCallback(async (id: string, updated: Partial<Driver>): Promise<ApiFieldResult> => {
+    try {
+      const bodyPayload: any = {};
+      if (updated.name !== undefined) bodyPayload.name = updated.name;
+      if (updated.licenseNumber !== undefined) bodyPayload.licenseNumber = updated.licenseNumber;
+      if (updated.category !== undefined) bodyPayload.licenseCategory = updated.category;
+      if (updated.licenseExpiry !== undefined) bodyPayload.licenseExpiryDate = updated.licenseExpiry;
+      if (updated.contactNumber !== undefined) bodyPayload.contactNumber = updated.contactNumber;
+      if (updated.safetyScore !== undefined) bodyPayload.safetyScore = updated.safetyScore;
+      if (updated.status !== undefined) bodyPayload.status = driverStatusToApi(updated.status);
+
+      const response = await fetch(`/api/drivers/${id}`, {
+        method: 'PATCH',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(bodyPayload),
+      });
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        const errMsg = payload?.details?.[0]?.message || payload?.error || 'Driver update failed.';
+        const errField = payload?.details?.[0]?.field || 'licenseNumber';
+        return {success: false, error: {field: errField, message: errMsg}};
+      }
+
+      const driverData = payload?.success && payload?.data ? payload.data : payload;
+      setDrivers((prev) => prev.map((d) => (d.id === id ? mapDriver(driverData as ApiDriver) : d)));
+      return {success: true};
+    } catch (err) {
+      return {success: false, error: {field: 'licenseNumber', message: err instanceof Error ? err.message : 'Driver update failed.'}};
+    }
+  }, []);
+
+  const changeDriverStatus = useCallback(async (id: string, status: DriverStatus): Promise<ApiFieldResult> => {
+    try {
+      const response = await fetch(`/api/drivers/${id}/status`, {
+        method: 'PATCH',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          status: driverStatusToApi(status),
+        }),
+      });
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        const errMsg = payload?.details?.[0]?.message || payload?.error || 'Failed to change status.';
+        const errField = payload?.details?.[0]?.field || 'status';
+        return {success: false, error: {field: errField, message: errMsg}};
+      }
+
+      const driverData = payload?.success && payload?.data ? payload.data : payload;
+      setDrivers((prev) => prev.map((d) => (d.id === id ? mapDriver(driverData as ApiDriver) : d)));
+      return {success: true};
+    } catch (err) {
+      return {success: false, error: {field: 'status', message: err instanceof Error ? err.message : 'Failed to change status.'}};
+    }
+  }, []);
   const stats = useMemo(() => {
     const activeFleetCount = vehicles.filter((v) => v.status !== 'RETIRED').length;
     const driversOnDutyCount = drivers.filter((d) => d.status === 'AVAILABLE' || d.status === 'ON_TRIP').length;
@@ -313,8 +376,10 @@ export function DataProvider({children}: {children: ReactNode}) {
     dispatchTrip,
     completeTrip,
     cancelTrip,
+    updateDriver,
+    changeDriverStatus,
     stats,
-  }), [vehicles, drivers, trips, loading, error, refreshData, addVehicle, addDriver, addTrip, dispatchTrip, completeTrip, cancelTrip, stats]);
+  }), [vehicles, drivers, trips, loading, error, refreshData, addVehicle, addDriver, addTrip, dispatchTrip, completeTrip, cancelTrip, updateDriver, changeDriverStatus, stats]);
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 }
