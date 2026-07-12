@@ -1,0 +1,34 @@
+name: Documentation Bot
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  update-docs:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Docs Bot Script
+        env:
+          COMMITS_JSON: ${{ toJSON(github.event.commits) }}
+          WORKSPACE: ${{ github.workspace }}
+        run: |
+          chmod +x scripts/docs-bot.sh
+          ./scripts/docs-bot.sh
+
+      - name: Commit documentation changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "DOCS: automated changelog/status update for ${{ github.sha }}"
+          commit_author: telemetryhealth-docs-bot <actions@github.com>
+          file_pattern: "docs/*.md docs/commit-log/*.md"
+          skip_dirty_check: false
+          skip_fetch: true
