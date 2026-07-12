@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
+- [`0f16a0e`](https://github.com/yashhh-23/chanakya/commit/0f16a0ee1856e2d32fdc58d6dd5282d48f2ded18) FEATURE: Complete Phase 4 Maintenance workflow, Fuel & Expenses, and Reports/Analytics
 - [`9f22aee`](https://github.com/yashhh-23/chanakya/commit/9f22aee2cfc5a50697dc58d4192378a6455b5081) FEATURE: Finalize Phase 4 integration and polish reporting/demo experience
 - [`e12763d`](https://github.com/yashhh-23/chanakya/commit/e12763d9204543f2ad93798d37f17af707977d25) FEATURE: Implement Phase 3 Trip Dispatcher, Live Board, and Analytics screens
 - [`921900a`](https://github.com/yashhh-23/chanakya/commit/921900a5650e0301e553ed398e66edaf2b6353da) FEATURE: integrate phase 1 TransitOps frontend with Next app
