@@ -19,15 +19,17 @@ model User {
 }
 
 model Vehicle {
-  id                 String  @id @default(uuid())
-  registrationNumber String  @unique
+  id                 String    @id @default(uuid())
+  registrationNumber String    @unique
   name               String
   type               String
   maxLoadCapacity    Float
   odometer           Float
   acquisitionCost    Float
   region             String?
-  status             String  @default("Available")
+  status             String    @default("Available")
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @default(now()) @updatedAt
 
   trips           Trip[]
   maintenanceLogs MaintenanceLog[]

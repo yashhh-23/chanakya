@@ -1,61 +1,52 @@
-import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { NextRequest } from 'next/server'
+import { VehicleService } from '@/lib/services/vehicle.service'
+import { ApiResponse } from '@/lib/utils/api-response'
+import { createVehicleSchema, vehicleQuerySchema } from '@/lib/validations/vehicle.backend'
 
-export async function GET(request: Request) {
+/**
+ * GET /api/vehicles
+ * Lists vehicles with search, filter, whitelisted sorting, and dispatch eligibility options.
+ */
+export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const type = searchParams.get('type')
-    const status = searchParams.get('status')
-    const search = searchParams.get('search')
+    const rawParams = Object.fromEntries(searchParams.entries())
 
-    const where: any = {}
-    if (type) where.type = type
-    if (status) where.status = status
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { registrationNumber: { contains: search, mode: 'insensitive' } }
-      ]
-    }
+    // Validate query params against whitelist and defaults
+    const validatedParams = vehicleQuerySchema.parse(rawParams)
 
-    const vehicles = await prisma.vehicle.findMany({ where })
-    return NextResponse.json(vehicles)
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    const vehicles = await VehicleService.getVehicles(validatedParams)
+    return ApiResponse.success(vehicles)
+  } catch (error) {
+    return ApiResponse.serverError(error)
   }
 }
 
-export async function POST(request: Request) {
+/**
+ * POST /api/vehicles
+ * Creates a new vehicle with strict validation and unique registration enforcement.
+ */
+export async function POST(request: NextRequest) {
   try {
-    const data = await request.json()
-    // Minimal validation before save
-    if (!data.registrationNumber || !data.name || !data.maxLoadCapacity || !data.acquisitionCost) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    const body = await request.json()
+
+    // Validate payload shape and field constraints
+    const validatedData = createVehicleSchema.parse(body)
+
+    // Check unique registration number explicitly to return clean 409 error
+    const existing = await VehicleService.getVehicles({
+      search: validatedData.registrationNumber
+    })
+    const isDuplicate = existing.some(
+      (v: any) => v.registrationNumber.toUpperCase() === validatedData.registrationNumber.toUpperCase()
+    )
+    if (isDuplicate) {
+      return ApiResponse.conflict('Registration number already exists. Vehicle registration numbers must be unique.')
     }
 
-    // Check unique registration
-    const existing = await prisma.vehicle.findUnique({
-      where: { registrationNumber: data.registrationNumber }
-    })
-    if (existing) {
-      return NextResponse.json({ error: 'Registration number already exists' }, { status: 400 })
-    }
-
-    const vehicle = await prisma.vehicle.create({
-      data: {
-        registrationNumber: data.registrationNumber,
-        name: data.name,
-        type: data.type || 'Truck',
-        maxLoadCapacity: parseFloat(data.maxLoadCapacity),
-        odometer: parseFloat(data.odometer || '0'),
-        acquisitionCost: parseFloat(data.acquisitionCost),
-        region: data.region || 'HQ',
-        status: data.status || 'Available',
-      }
-    })
-
-    return NextResponse.json(vehicle, { status: 201 })
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    const vehicle = await VehicleService.createVehicle(validatedData)
+    return ApiResponse.success(vehicle, 201)
+  } catch (error) {
+    return ApiResponse.serverError(error)
   }
 }
