@@ -12,7 +12,14 @@ export async function POST(
       return NextResponse.json({ error: 'Missing endOdometer or fuelConsumed' }, { status: 400 })
     }
 
-    const trip = await completeTrip(id, parseFloat(data.endOdometer), parseFloat(data.fuelConsumed))
+    const endOdo = parseFloat(data.endOdometer)
+    const fuel = parseFloat(data.fuelConsumed)
+
+    if (isNaN(endOdo) || isNaN(fuel)) {
+      return NextResponse.json({ error: 'endOdometer and fuelConsumed must be valid numbers' }, { status: 400 })
+    }
+
+    const trip = await completeTrip(id, endOdo, fuel)
     return NextResponse.json(trip)
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 400 })

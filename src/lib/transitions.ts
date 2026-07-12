@@ -44,6 +44,7 @@ export async function completeTrip(tripId: string, endOdometer: number, fuelCons
     if (!trip) throw new Error("Trip not found")
     if (trip.status !== "Dispatched") throw new Error("Trip is not currently dispatched")
     if (trip.startOdometer == null || endOdometer < trip.startOdometer) throw new Error("End odometer must be ≥ start odometer")
+    if (fuelConsumed < 0) throw new Error("Fuel consumed cannot be negative")
 
     await tx.vehicle.update({
       where: { id: trip.vehicleId },
@@ -66,6 +67,15 @@ export async function completeTrip(tripId: string, endOdometer: number, fuelCons
         vehicleId: trip.vehicleId,
         liters: fuelConsumed,
         cost: fuelCost
+      }
+    })
+
+    await tx.expense.create({
+      data: {
+        vehicleId: trip.vehicleId,
+        category: "Fuel",
+        amount: fuelCost,
+        description: `Trip Fuel Log (${fuelConsumed}L)`,
       }
     })
 
@@ -111,6 +121,7 @@ export async function logMaintenance(vehicleId: string, description: string, cos
     const vehicle = await tx.vehicle.findUnique({ where: { id: vehicleId } })
     if (!vehicle) throw new Error("Vehicle not found")
     if (vehicle.status === "Retired") throw new Error("Cannot maintain a retired vehicle")
+    if (vehicle.status === "On Trip") throw new Error("Cannot maintain a vehicle that is actively on a trip")
 
     await tx.vehicle.update({
       where: { id: vehicleId },
@@ -137,7 +148,12 @@ export async function closeMaintenance(logId: string) {
     const vehicle = await tx.vehicle.findUnique({ where: { id: log.vehicleId } })
     if (!vehicle) throw new Error("Vehicle not found")
 
-    if (vehicle.status !== "Retired") {
+    // Only set to Available if there are no other open maintenance logs
+    const openLogsCount = await tx.maintenanceLog.count({
+      where: { vehicleId: log.vehicleId, isOpen: true, id: { not: logId } }
+    })
+
+    if (vehicle.status !== "Retired" && openLogsCount === 0) {
       await tx.vehicle.update({
         where: { id: log.vehicleId },
         data: { status: "Available" },
