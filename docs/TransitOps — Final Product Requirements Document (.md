@@ -1,13 +1,6 @@
-
 # TransitOps — Final Product Requirements Document (PRD)
 
 **Project:** Smart Transport Operations Platform
-**Version:** 3.0 (Gap-Fixed — Hackathon Compliant)
-**Format:** Hackathon build, 9:00–17:00 (8 hours), team of 4
-**Reference mockup:** Excalidraw — 6 screens (Auth, Dashboard, Vehicle Registry, Drivers \& Safety, Trip Dispatcher, Maintenance)
-**Date:** July 12, 2026
-
-> **What changed from v2.0:** Six gaps were fixed to ensure full compliance with hackathon rules and the problem statement. Key fixes: database set to **PostgreSQL (local)**, Git workflow added, Screens 6 \& 7 wireframes added, driver-role decision documented, filter/sort added to Trip and Maintenance, full input validation added, and Live Board polling specified.
 
 ***
 
@@ -489,21 +482,3 @@ COMMIT;
 ```
 
 ***
-
-## Appendix A: Resolved Conflicts \& Fixes
-
-**A.1 — Database:** SQLite was the old default. PostgreSQL (local) is now the required default.
-
-**A.2 — Role naming:** Dispatcher is the login role; Driver is a data entity.
-
-**A.3 — Git workflow:** Every member must commit; branch-per-person workflow added.
-
-**A.4 — Wireframes for Screens 6 \& 7:** Added inline layout specs.
-
-**A.5 — Filter/sort on all tables:** Added to Trips, Maintenance, Fuel/Expenses, and Reports.
-
-**A.6 — Input validation:** Added a complete field-level validation table.
-
-**A.7 — Live Board polling:** Added 15-second polling to satisfy dynamic-data requirement.
-
-Would you like me to also convert this into a clean Markdown file format you can paste directly into your repo?
