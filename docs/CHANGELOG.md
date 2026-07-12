@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
+- [`e12763d`](https://github.com/yashhh-23/chanakya/commit/e12763d9204543f2ad93798d37f17af707977d25) FEATURE: Implement Phase 3 Trip Dispatcher, Live Board, and Analytics screens
 - [`921900a`](https://github.com/yashhh-23/chanakya/commit/921900a5650e0301e553ed398e66edaf2b6353da) FEATURE: integrate phase 1 TransitOps frontend with Next app
 - [`d95b66e`](https://github.com/yashhh-23/chanakya/commit/d95b66e1fc95f6f1f5bd4dd1ab48cb8a5fadea41) FEATURE: Implement Phase 2 Dashboard KPI telemetry, Fuel & Expenses two-panel interactive screens, and API endpoints
 - FEATURE: Implement Phase 2 Dashboard KPI cards & API endpoints, Fuel & Expenses two-panel interactive page, and role-aware navigation
