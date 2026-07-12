@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getAuthenticatedUser } from '@/lib/auth'
 import { checkPermission } from '@/lib/rbac'
 import { ApiResponse } from '@/lib/utils/api-response'
+import { VehicleService } from '@/lib/services/vehicle.service'
 import { z } from 'zod'
 
 const fuelExpenseInputSchema = z.object({
@@ -26,93 +27,11 @@ export async function GET(request: Request) {
     const vehicleId = searchParams.get('vehicleId')
     const category = searchParams.get('category')
 
-    const fuelWhere: any = {}
-    const expenseWhere: any = {}
-
-    if (vehicleId && vehicleId !== 'ALL') {
-      fuelWhere.vehicleId = vehicleId
-      expenseWhere.vehicleId = vehicleId
-    }
-    if (category && category !== 'ALL') {
-      expenseWhere.category = category
-    }
-
-    const [fuelLogs, expenses, vehicles] = await Promise.all([
-      prisma.fuelLog.findMany({
-        where: fuelWhere,
-        orderBy: { date: 'desc' },
-        include: { vehicle: true },
-      }),
-      prisma.expense.findMany({
-        where: expenseWhere,
-        orderBy: { date: 'desc' },
-        include: { vehicle: true },
-      }),
-      prisma.vehicle.findMany({
-        select: {
-          id: true,
-          registrationNumber: true,
-          name: true,
-          status: true,
-        },
-      }),
-    ])
-
-    // Auto-compute operational cost summary per vehicle (BUG-12 optimized using groupBy)
-    const summaryMap: Record<
-      string,
-      {
-        vehicleId: string
-        registrationNumber: string
-        name: string
-        fuelCost: number
-        maintenanceCost: number
-        otherCost: number
-        totalOperationalCost: number
-      }
-    > = {}
-
-    vehicles.forEach((v: any) => {
-      summaryMap[v.id] = {
-        vehicleId: v.id,
-        registrationNumber: v.registrationNumber,
-        name: v.name,
-        fuelCost: 0,
-        maintenanceCost: 0,
-        otherCost: 0,
-        totalOperationalCost: 0,
-      }
-    })
-
-    const summaries = await prisma.expense.groupBy({
-      by: ['vehicleId', 'category'],
-      _sum: {
-        amount: true
-      },
-      where: fuelWhere
-    })
-
-    summaries.forEach((sum: any) => {
-      const entry = summaryMap[sum.vehicleId]
-      if (entry) {
-        const amount = sum._sum.amount || 0
-        if (sum.category === 'Fuel') {
-          entry.fuelCost = amount
-        } else if (sum.category === 'Maintenance') {
-          entry.maintenanceCost = amount
-        } else {
-          entry.otherCost += amount
-        }
-        entry.totalOperationalCost += amount
-      }
-    })
+    const summary = await VehicleService.getExpensesSummary(vehicleId, category)
 
     return NextResponse.json({
       success: true,
-      fuelLogs,
-      expenses,
-      vehicles,
-      vehicleSummaries: Object.values(summaryMap),
+      ...summary
     })
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 })

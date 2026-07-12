@@ -28,6 +28,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - [`b8622d5`](https://github.com/yashhh-23/chanakya/commit/b8622d53d790ecee3f101c688b8662a1e5248bcb) UI: Add EmptyState component to fix build error
 
 ### Changed
+- [`0e0b719`](https://github.com/yashhh-23/chanakya/commit/0e0b71945f07105099ef8c07ddf7b5593dd20734) REFACTOR: resolve backend code smells and type-safety
 - [`2bf8e23`](https://github.com/yashhh-23/chanakya/commit/2bf8e235daa0765a1a37887f2d20eda26ceb0eee) DOCS: automated changelog/status update for 921900a5650e0301e553ed398e66edaf2b6353da
 - [`0d09284`](https://github.com/yashhh-23/chanakya/commit/0d09284c1eddbdefb5243af4b2822e62feca7dcb) DOCS: automated changelog/status update for 7ff25da14f3dcad56a1683c0b32c67595e739491
 - [`9b5759c`](https://github.com/yashhh-23/chanakya/commit/9b5759c69ad3f5141e5f699918fba7a4d31a9f40) DOCS: UPDATE THE READ.me and
