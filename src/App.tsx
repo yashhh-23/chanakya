@@ -1,6 +1,6 @@
-﻿"use client";
+"use client";
 
-import {useState, memo} from 'react';
+import {useState, useEffect, memo} from 'react';
 import {ThemeProvider} from './contexts/ThemeContext';
 import {ToastProvider} from './contexts/ToastContext';
 import {AuthProvider, useAuth} from './contexts/AuthContext';
@@ -16,6 +16,15 @@ import {AuthPage} from './features/auth/AuthPage';
 const AppContent = memo(function AppContent() {
   const {isAuthenticated} = useAuth();
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null;
+  }
 
   if (!isAuthenticated) {
     return (
