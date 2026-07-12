@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {useState, ReactNode, memo, useCallback, ChangeEvent} from 'react';
+import {useState, ReactNode, memo, useCallback, ChangeEvent, useEffect, useMemo} from 'react';
 import {motion, AnimatePresence} from 'motion/react';
 import {
   Menu,
@@ -58,15 +58,29 @@ export const AppShell = memo(function AppShell({
     {id: '3', text: 'Maintenance scheduled for Tata Ultra T.7 tomorrow.', time: '1d ago'},
   ]);
 
-  const navItems = [
-    {id: 'dashboard' as ActiveTab, label: 'Dashboard', icon: LayoutDashboard},
-    {id: 'trips' as ActiveTab, label: 'Trip Dispatcher', icon: MapPin},
-    {id: 'vehicles' as ActiveTab, label: 'Vehicle Registry', icon: Truck},
-    {id: 'drivers' as ActiveTab, label: 'Driver Directory', icon: Users},
-    {id: 'maintenance' as ActiveTab, label: 'Maintenance Log', icon: Wrench},
-    {id: 'fuel-expenses' as ActiveTab, label: 'Fuel & Expenses', icon: Coins},
-    {id: 'analytics' as ActiveTab, label: 'Reports & Analytics', icon: BarChart3},
-  ];
+  const navItems = useMemo(() => [
+    {id: 'dashboard' as ActiveTab, label: 'Dashboard', icon: LayoutDashboard, roles: ['FLEET_MANAGER', 'DRIVER', 'SAFETY_OFFICER', 'FINANCIAL_ANALYST']},
+    {id: 'vehicles' as ActiveTab, label: 'Vehicle Registry', icon: Truck, roles: ['FLEET_MANAGER']},
+    {id: 'maintenance' as ActiveTab, label: 'Maintenance Log', icon: Wrench, roles: ['FLEET_MANAGER']},
+    {id: 'trips' as ActiveTab, label: 'Trip Dispatcher', icon: MapPin, roles: ['DRIVER']},
+    {id: 'drivers' as ActiveTab, label: 'Driver Directory', icon: Users, roles: ['SAFETY_OFFICER']},
+    {id: 'fuel-expenses' as ActiveTab, label: 'Fuel & Expenses', icon: Coins, roles: ['FINANCIAL_ANALYST']},
+    {id: 'analytics' as ActiveTab, label: 'Reports & Analytics', icon: BarChart3, roles: ['FINANCIAL_ANALYST']},
+  ], []);
+
+  const filteredNavItems = useMemo(() => {
+    if (!user) return [];
+    return navItems.filter((item: any) => item.roles.includes(user.role));
+  }, [user, navItems]);
+
+  useEffect(() => {
+    if (user) {
+      const hasAccess = navItems.find((item: any) => item.id === activeTab)?.roles.includes(user.role);
+      if (!hasAccess) {
+        setActiveTab('dashboard');
+      }
+    }
+  }, [user?.role, activeTab, setActiveTab, navItems]);
 
   const handleRoleChange = useCallback((e: ChangeEvent<HTMLSelectElement>) => {
     setRole(e.target.value as UserRole);
@@ -120,7 +134,7 @@ export const AppShell = memo(function AppShell({
 
         {/* Sidebar Nav Items */}
         <nav className="flex-1 py-4 px-2 space-y-1" role="navigation" aria-label="Main Navigation">
-          {navItems.map((item) => {
+          {filteredNavItems.map((item: any) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
             return (
@@ -215,7 +229,7 @@ export const AppShell = memo(function AppShell({
 
               {/* Navigation items */}
               <nav className="flex-grow py-4 px-2 space-y-1">
-                {navItems.map((item) => {
+                {filteredNavItems.map((item: any) => {
                   const Icon = item.icon;
                   const isActive = activeTab === item.id;
                   return (
@@ -274,7 +288,7 @@ export const AppShell = memo(function AppShell({
               <Menu size={20} />
             </button>
             <h1 className="text-sm font-bold tracking-tight font-display text-text-base md:text-base capitalize">
-              {navItems.find((n) => n.id === activeTab)?.label}
+              {navItems.find((n: any) => n.id === activeTab)?.label}
             </h1>
           </div>
 
