@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 
 ### Changed
+- [`3d13775`](https://github.com/yashhh-23/chanakya/commit/3d137750e4eb8c0732f689b2982639fc38ed8b5c) DOCS: Remove emojis from README headings
 - [`8a581f9`](https://github.com/yashhh-23/chanakya/commit/8a581f9b59b839710b7c60ca7e38eef9a16960d1) DOCS: Add comprehensive detailed README for TransitOps project
 - [`f809598`](https://github.com/yashhh-23/chanakya/commit/f809598cbef2f3aa5b5d3091de8bf3651173dd8c) DOCS: Add API documentation for Vehicle, Driver, and Trip endpoints
 - [`250c54c`](https://github.com/yashhh-23/chanakya/commit/250c54c7c1546394157349a353f741015d7c909a) DOCS: updated PRD
