@@ -53,9 +53,10 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
       <input
         ref={ref}
         id={inputId}
-        className={`w-full h-10 px-3 py-2 bg-bg-surface border ${
-          error ? 'border-red-500 focus-visible:outline-red-500' : 'border-border-base focus-visible:outline-primary-base'
-        } rounded-md text-sm text-text-base placeholder:text-text-muted/60 bg-transparent transition-all outline-none disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+        className={`w-full h-10 px-3 py-2 border ${
+          error ? 'border-red-500 focus-visible:outline-red-500' : 'border-[var(--input-border)] focus-visible:outline-[var(--status-dispatched)]'
+        } rounded-md text-sm transition-all outline-none disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+        style={{ backgroundColor: 'var(--input-bg)', color: 'var(--input-text)' }}
         {...props}
       />
     );
@@ -80,9 +81,10 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(
         ref={ref}
         type="number"
         id={inputId}
-        className={`w-full h-10 px-3 py-2 bg-bg-surface border ${
-          error ? 'border-red-500 focus-visible:outline-red-500' : 'border-border-base focus-visible:outline-primary-base'
-        } rounded-md text-sm text-text-base placeholder:text-text-muted/60 bg-transparent transition-all outline-none disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+        className={`w-full h-10 px-3 py-2 border ${
+          error ? 'border-red-500 focus-visible:outline-red-500' : 'border-[var(--input-border)] focus-visible:outline-[var(--status-dispatched)]'
+        } rounded-md text-sm transition-all outline-none disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+        style={{ backgroundColor: 'var(--input-bg)', color: 'var(--input-text)' }}
         {...props}
       />
     );
@@ -107,9 +109,10 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
         ref={ref}
         type="date"
         id={inputId}
-        className={`w-full h-10 px-3 py-2 bg-bg-surface border ${
-          error ? 'border-red-500 focus-visible:outline-red-500' : 'border-border-base focus-visible:outline-primary-base'
-        } rounded-md text-sm text-text-base placeholder:text-text-muted/60 bg-transparent transition-all outline-none disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+        className={`w-full h-10 px-3 py-2 border ${
+          error ? 'border-red-500 focus-visible:outline-red-500' : 'border-[var(--input-border)] focus-visible:outline-[var(--status-dispatched)]'
+        } rounded-md text-sm transition-all outline-none disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+        style={{ backgroundColor: 'var(--input-bg)', color: 'var(--input-text)', colorScheme: 'inherit' }}
         {...props}
       />
     );
@@ -133,9 +136,10 @@ export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
       <textarea
         ref={ref}
         id={inputId}
-        className={`w-full min-h-[80px] px-3 py-2 bg-bg-surface border ${
-          error ? 'border-red-500 focus-visible:outline-red-500' : 'border-border-base focus-visible:outline-primary-base'
-        } rounded-md text-sm text-text-base placeholder:text-text-muted/60 bg-transparent transition-all outline-none disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+        className={`w-full min-h-[80px] px-3 py-2 border ${
+          error ? 'border-red-500 focus-visible:outline-red-500' : 'border-[var(--input-border)] focus-visible:outline-[var(--status-dispatched)]'
+        } rounded-md text-sm transition-all outline-none resize-y disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+        style={{ backgroundColor: 'var(--input-bg)', color: 'var(--input-text)' }}
         {...props}
       />
     );
@@ -160,13 +164,18 @@ export const SelectBox = forwardRef<HTMLSelectElement, SelectBoxProps>(
       <select
         ref={ref}
         id={inputId}
-        className={`w-full h-10 px-3 py-2 bg-bg-surface border ${
-          error ? 'border-red-500 focus-visible:outline-red-500' : 'border-border-base focus-visible:outline-primary-base'
-        } rounded-md text-sm text-text-base bg-transparent transition-all outline-none disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+        className={`w-full h-10 px-3 py-2 border ${
+          error ? 'border-red-500 focus-visible:outline-red-500' : 'border-[var(--input-border)] focus-visible:outline-[var(--status-dispatched)]'
+        } rounded-md text-sm transition-all outline-none disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+        style={{ backgroundColor: 'var(--input-bg)', color: 'var(--input-text)', colorScheme: 'inherit' }}
         {...props}
       >
         {options.map((opt) => (
-          <option key={opt.value} value={opt.value} className="bg-bg-surface text-text-base">
+          <option
+            key={opt.value}
+            value={opt.value}
+            style={{ backgroundColor: 'var(--input-bg)', color: 'var(--input-text)' }}
+          >
             {opt.label}
           </option>
         ))}
