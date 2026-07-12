@@ -28,7 +28,7 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "DOCS: automated changelog/status update for ${{ github.sha }}"
-          commit_author: telemetryhealth-docs-bot <actions@github.com>
+          commit_author: DOCS help related bot <actions@github.com>
           file_pattern: "docs/*.md docs/commit-log/*.md"
           skip_dirty_check: false
           skip_fetch: true
