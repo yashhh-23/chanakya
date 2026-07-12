@@ -54,7 +54,7 @@ export async function GET(request: Request) {
       }
     > = {}
 
-    vehicles.forEach((v) => {
+    vehicles.forEach((v: any) => {
       summaryMap[v.id] = {
         vehicleId: v.id,
         registrationNumber: v.registrationNumber,
@@ -66,7 +66,7 @@ export async function GET(request: Request) {
       }
     })
 
-    allExpenses.forEach((exp) => {
+    allExpenses.forEach((exp: any) => {
       const entry = summaryMap[exp.vehicleId]
       if (entry) {
         if (exp.category === 'Fuel') entry.fuelCost += exp.amount

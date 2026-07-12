@@ -17,10 +17,10 @@ export async function GET(request: Request) {
     })
 
     const totalVehicles = vehicles.length
-    const availableVehicles = vehicles.filter((v) => v.status === 'Available').length
-    const activeVehicles = vehicles.filter((v) => v.status === 'On Trip').length
-    const maintenanceVehicles = vehicles.filter((v) => v.status === 'In Shop').length
-    const retiredVehicles = vehicles.filter((v) => v.status === 'Retired').length
+    const availableVehicles = vehicles.filter((v: { status: string }) => v.status === 'Available').length
+    const activeVehicles = vehicles.filter((v: { status: string }) => v.status === 'On Trip').length
+    const maintenanceVehicles = vehicles.filter((v: { status: string }) => v.status === 'In Shop').length
+    const retiredVehicles = vehicles.filter((v: { status: string }) => v.status === 'Retired').length
 
     // Fleet utilization calculation per PRD: active / (active + available + maintenance)
     const operationalCount = activeVehicles + availableVehicles + maintenanceVehicles
