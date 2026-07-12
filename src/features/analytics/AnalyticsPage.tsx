@@ -124,7 +124,7 @@ export const AnalyticsPage = memo(function AnalyticsPage() {
       'Vehicle Type',
       'Current Odometer (km)',
       'Total Operational Cost',
-      'Calculated ROI (%)',
+      'Calculated ROI',
       'Current Status',
     ];
 
@@ -137,7 +137,7 @@ export const AnalyticsPage = memo(function AnalyticsPage() {
           `"${row.type}"`,
           row.odometer,
           row.operationalCost.toFixed(2),
-          row.roi.toFixed(2),
+          (row.roi / 100).toFixed(4),
           `"${row.status}"`,
         ].join(',')
       ),
