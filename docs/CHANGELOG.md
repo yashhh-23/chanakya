@@ -21,6 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - [`5a13e03`](https://github.com/yashhh-23/chanakya/commit/5a13e03d2515a644b13a3f263c34dd644733a38e) FEATURE: Add dummy file to test GitHub bot
 
 ### Fixed
+- [`ac1b820`](https://github.com/yashhh-23/chanakya/commit/ac1b8206a11f9cb2fb59014adaa9d9db9a3bd75d) BUG: resolve backend audit bugs and integrate RBAC
 - [`c8aa915`](https://github.com/yashhh-23/chanakya/commit/c8aa91520c85ae4b236e893ce79105e9e8e6c9d3) BUG: Align reports API metrics and CSV export with PRD and API contracts
 - [`bc058e8`](https://github.com/yashhh-23/chanakya/commit/bc058e81055ffd64157e9d6bdbdd96d93911de32) BUG: Fortify transition logic against data corruption and metric leaks
 - [`3c2ce87`](https://github.com/yashhh-23/chanakya/commit/3c2ce87f7420da623bded9f19e86e6f5dd2301c5) BUG: Fix implicit any TS errors and install missing frontend dependencies
