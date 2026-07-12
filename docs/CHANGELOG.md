@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 
 ### Changed
+- [`f809598`](https://github.com/yashhh-23/chanakya/commit/f809598cbef2f3aa5b5d3091de8bf3651173dd8c) DOCS: Add API documentation for Vehicle, Driver, and Trip endpoints
 - [`250c54c`](https://github.com/yashhh-23/chanakya/commit/250c54c7c1546394157349a353f741015d7c909a) DOCS: updated PRD
 - [`0004983`](https://github.com/yashhh-23/chanakya/commit/00049832602b6b8df0f1e47a706fd53e855a9ef3) DOCS: Clean up formatting in PRD
 - [`17efa30`](https://github.com/yashhh-23/chanakya/commit/17efa309b10468f9739b2cf9782092e0d8e75615) DOCS: Remove logo image from PRD
