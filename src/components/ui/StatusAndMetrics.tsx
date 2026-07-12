@@ -374,8 +374,8 @@ export const KpiCard = memo(function KpiCard({
       <div className="absolute top-0 left-0 w-1.5 h-full bg-status-dispatched"></div>
       
       <div className="flex items-start justify-between gap-4">
-        <div className="space-y-1 flex-1">
-          <span className="text-xs font-semibold uppercase tracking-wider text-text-muted">{label}</span>
+        <div className="space-y-1 flex-1 min-w-0">
+          <div className="text-xs font-semibold uppercase tracking-wider text-text-muted truncate">{label}</div>
           {loading ? (
             <div className="space-y-2 pt-1">
               <Skeleton variant="rect" height={36} width="50%" />
@@ -383,8 +383,8 @@ export const KpiCard = memo(function KpiCard({
             </div>
           ) : (
             <>
-              <div className="text-3xl font-extrabold tracking-tight font-display text-text-base">{value}</div>
-              <div className="flex items-center gap-1.5 pt-1">
+              <div className="text-3xl font-extrabold tracking-tight font-display text-text-base truncate">{value}</div>
+              <div className="flex items-center flex-wrap gap-1.5 pt-1">
                 {change !== undefined && trend && (
                   <span className={`inline-flex items-center gap-0.5 text-xs font-bold rounded-full px-2 py-0.5 ${
                     trend === 'up'
@@ -398,13 +398,13 @@ export const KpiCard = memo(function KpiCard({
                     <span>{change}</span>
                   </span>
                 )}
-                {description && <span className="text-xs text-text-muted font-medium">{description}</span>}
+                {description && <span className="text-xs text-text-muted font-medium line-clamp-2 min-w-0">{description}</span>}
               </div>
             </>
           )}
         </div>
         {icon && (
-          <div className="p-3 bg-border-base/40 rounded-lg text-text-muted group-hover:text-status-dispatched group-hover:bg-status-dispatched/10 transition-colors duration-300">
+          <div className="flex-shrink-0 p-3 bg-border-base/40 rounded-lg text-text-muted group-hover:text-status-dispatched group-hover:bg-status-dispatched/10 transition-colors duration-300">
             {icon}
           </div>
         )}
