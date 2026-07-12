@@ -312,7 +312,7 @@ export const AnalyticsPage = memo(function AnalyticsPage() {
                 onClick={() => setActiveSubTab(tab.id as any)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-md transition-all ${
                   activeSubTab === tab.id
-                    ? 'bg-muted-base text-white border border-border-base/50 shadow-sm'
+                    ? 'bg-muted-base text-text-base border border-border-base/50 shadow-sm'
                     : 'text-text-muted hover:text-text-base border border-transparent'
                 }`}
               >

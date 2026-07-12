@@ -288,7 +288,7 @@ export const MaintenancePage = memo(function MaintenancePage() {
                 onClick={() => setStatusFilter(f)}
                 className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${
                   statusFilter === f
-                    ? 'bg-muted-base text-white border border-border-base/50 shadow-sm'
+                    ? 'bg-muted-base text-text-base border border-border-base/50 shadow-sm'
                     : 'text-text-muted hover:text-text-base border border-transparent'
                 }`}
               >
