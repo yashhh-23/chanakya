@@ -1,26 +1,104 @@
+﻿@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;600;700;800&display=swap');
 @import "tailwindcss";
 
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-display: "Space Grotesk", sans-serif;
+
+  --color-bg-base: var(--background);
+  --color-bg-surface: var(--surface);
+  --color-bg-card: var(--card);
+  --color-bg-sidebar: var(--sidebar);
+  --color-text-sidebar: var(--sidebar-text);
+  --color-border-base: var(--border);
+  --color-primary-base: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary-base: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted-base: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-text-base: var(--text);
+  --color-text-muted: var(--text-muted);
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+  --background: #f8fafc;
+  --surface: #ffffff;
+  --card: #ffffff;
+  --sidebar: #0f172a;
+  --sidebar-text: #f8fafc;
+  --border: #e2e8f0;
+  --primary: #0f172a;
+  --primary-foreground: #ffffff;
+  --secondary: #64748b;
+  --secondary-foreground: #ffffff;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --text: #0f172a;
+  --text-muted: #64748b;
+  --status-available: #10b981;
+  --status-ontrip: #f59e0b;
+  --status-dispatched: #f97316;
+  --status-inshop: #ef4444;
+  --status-suspended: #ef4444;
+  --status-cancelled: #ef4444;
+  --status-retired: #6b7280;
+  --status-draft: #6b7280;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+.dark {
+  color-scheme: dark;
+  --background: #09090b;
+  --surface: #09090b;
+  --card: #09090b;
+  --sidebar: #09090b;
+  --sidebar-text: #fafafa;
+  --border: #27272a;
+  --primary: #ffffff;
+  --primary-foreground: #09090b;
+  --secondary: #a1a1aa;
+  --secondary-foreground: #09090b;
+  --muted: #18181b;
+  --muted-foreground: #a1a1aa;
+  --text: #fafafa;
+  --text-muted: #a1a1aa;
+  --status-available: #10b981;
+  --status-ontrip: #f59e0b;
+  --status-dispatched: #f97316;
+  --status-inshop: #ef4444;
+  --status-suspended: #ef4444;
+  --status-cancelled: #ef4444;
+  --status-retired: #6b7280;
+  --status-draft: #6b7280;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--status-dispatched);
+  outline-offset: 2px;
+}
+
+html,
+body {
+  min-height: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: var(--background);
+  color: var(--text);
+  font-family: var(--font-sans);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.recharts-default-tooltip {
+  background-color: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
 }
